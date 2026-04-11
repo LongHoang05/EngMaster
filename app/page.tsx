@@ -54,6 +54,7 @@ export default function EngMaster() {
   // const [isTopicLoading, setIsTopicLoading] = useState(false);
   // const [isVocabLoading, setIsVocabLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [hasStudiedToday, setHasStudiedToday] = useState(false);
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
@@ -417,11 +418,68 @@ export default function EngMaster() {
     reader.readAsBinaryString(file);
   };
 
-  const handleExportExcel =
-    (/* topicsToExport: Topic[], filename: string */) => {
-      toast.info("Tính năng xuất Excel chưa được cấu hình cho nhiều bảng.");
-      // Implementation can be added if needed
-    };
+  const handleExportExcel = async (topicsToExport: Topic[], filename: string) => {
+    if (topicsToExport.length === 0) {
+      toast.error("Không có chủ điểm nào để xuất.");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const topicIds = topicsToExport.map((t) => t.id);
+      let allVocabs: any[] = [];
+      
+      // Fetch matching vocabularies from Supabase
+      // Supabase has max limitations per request (usually 1000 items), but let's fetch simply first
+      const { data: vocabs, error } = await supabase
+        .from("vocabularies")
+        .select("topic_id, word, ipa, meanings, notes")
+        .in("topic_id", topicIds);
+
+      if (error) throw error;
+      if (!vocabs || vocabs.length === 0) {
+        toast.error("Không có từ vựng nào trong các chủ điểm này.");
+        setIsExporting(false);
+        return;
+      }
+
+      // Format data for sheet
+      const excelData = vocabs.map((v) => {
+        const parentTopic = topicsToExport.find(t => t.id === v.topic_id);
+        const meaningsStr = Array.isArray(v.meanings) ? v.meanings.join(", ") : v.meanings;
+        return {
+          "Chủ Điểm": parentTopic?.name || "Unknown",
+          "Word": v.word,
+          "IPA": v.ipa || "",
+          "Meanings": meaningsStr || "",
+          "Notes": v.notes || ""
+        };
+      });
+
+      // Generate worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      
+      // Adjust column width for better readability
+      ws['!cols'] = [
+        { wch: 25 }, // Chủ điểm
+        { wch: 20 }, // Word
+        { wch: 15 }, // IPA
+        { wch: 40 }, // Meanings
+        { wch: 30 }  // Notes
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "TuVung");
+
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+      toast.success("Xuất file Excel thành công!");
+    } catch (err) {
+      const error = err as Error;
+      toast.error("Lỗi xuất Excel: " + error.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // RENDERING
   if (isAuthLoading) return null;
@@ -500,7 +558,7 @@ export default function EngMaster() {
                 topics={topics}
                 userCode={userCode}
                 isImporting={isImporting}
-                isExporting={false}
+                isExporting={isExporting}
                 fileInputRef={fileInputRef}
                 handleFileSelect={handleFileSelect}
                 handleExportExcel={handleExportExcel}

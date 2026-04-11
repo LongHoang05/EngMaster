@@ -66,7 +66,7 @@ export default function DashboardScreen({
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  const [lbTab, setLbTab] = useState<"vocab" | "streak" | "mastery">("vocab");
+  const [lbTab, setLbTab] = useState<"streak" | "vocab" | "mastery">("streak");
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
 
@@ -396,8 +396,8 @@ export default function DashboardScreen({
             {/* TAB BUTTONS */}
             <div className="flex flex-wrap gap-1 bg-white/60 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm self-start overflow-x-auto hide-scroll w-full sm:w-auto">
               {[
-                { id: "vocab", label: "Tổng từ", icon: BookOpen },
                 { id: "streak", label: "Chuỗi lửa", icon: Flame },
+                { id: "vocab", label: "Tổng từ", icon: BookOpen },
                 { id: "mastery", label: "Bậc thầy", icon: Sparkles },
               ].map((tab) => (
                 <button
