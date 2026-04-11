@@ -36,6 +36,7 @@ import QuizContainer from "@/components/QuizContainer";
 import AddTopicModal from "@/components/AddTopicModal";
 import EditVocabularyModal from "@/components/EditVocabularyModal";
 import AddVocabularyBar from "@/components/AddVocabularyBar";
+import ExportExcelModal from "@/components/ExportExcelModal";
 
 export default function EngMaster() {
   const [userCode, setUserCode] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export default function EngMaster() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [hasStudiedToday, setHasStudiedToday] = useState(false);
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
+  const [isExportExcelModalOpen, setIsExportExcelModalOpen] = useState(false);
   const [isEditWordModalOpen, setIsEditWordModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState<Vocabulary | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "flashcards">("list");
@@ -473,6 +475,7 @@ export default function EngMaster() {
 
       XLSX.writeFile(wb, `${filename}.xlsx`);
       toast.success("Xuất file Excel thành công!");
+      setIsExportExcelModalOpen(false);
     } catch (err) {
       const error = err as Error;
       toast.error("Lỗi xuất Excel: " + error.message);
@@ -563,6 +566,7 @@ export default function EngMaster() {
                 handleFileSelect={handleFileSelect}
                 handleExportExcel={handleExportExcel}
                 setIsAddTopicModalOpen={setIsAddTopicModalOpen}
+                setIsExportExcelModalOpen={setIsExportExcelModalOpen}
                 onSelectTopic={setSelectedTopic}
               />
             ) : (
@@ -615,6 +619,15 @@ export default function EngMaster() {
       </main>
 
       {/* Modals */}
+      <ExportExcelModal
+        isOpen={isExportExcelModalOpen}
+        onClose={() => setIsExportExcelModalOpen(false)}
+        topics={topics}
+        userCode={userCode || ""}
+        onExport={handleExportExcel}
+        isExporting={isExporting}
+      />
+
       <AddTopicModal
         isOpen={isAddTopicModalOpen}
         onClose={() => setIsAddTopicModalOpen(false)}

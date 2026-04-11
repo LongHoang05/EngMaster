@@ -21,6 +21,7 @@ interface TopicListViewProps {
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleExportExcel: (topics: Topic[], name: string) => void;
   setIsAddTopicModalOpen: (open: boolean) => void;
+  setIsExportExcelModalOpen: (open: boolean) => void;
   onSelectTopic: (topic: Topic) => void;
 }
 
@@ -33,6 +34,7 @@ export default function TopicListView({
   handleFileSelect,
   handleExportExcel,
   setIsAddTopicModalOpen,
+  setIsExportExcelModalOpen,
   onSelectTopic,
 }: TopicListViewProps) {
   const groupedTopics = topics.reduce(
@@ -92,7 +94,7 @@ export default function TopicListView({
               Nhập Excel
             </button>
             <button
-              onClick={() => handleExportExcel(topics, "ToanBo_TuVung")}
+              onClick={() => setIsExportExcelModalOpen(true)}
               disabled={isExporting}
               className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-emerald-200 disabled:opacity-50 whitespace-nowrap"
             >
