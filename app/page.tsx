@@ -352,53 +352,49 @@ export default function EngMaster() {
 
     setIsExporting(true);
     try {
-      const topicIds = topicsToExport.map((t) => t.id);
-      let allVocabs: any[] = [];
-      
-      // Fetch matching vocabularies from Supabase
-      // Supabase has max limitations per request (usually 1000 items), but let's fetch simply first
-      const { data: vocabs, error } = await supabase
-        .from("vocabularies")
-        .select("topic_id, word, ipa, meanings, notes")
-        .in("topic_id", topicIds);
+      const wb = XLSX.utils.book_new();
+      let totalWords = 0;
 
-      if (error) throw error;
-      if (!vocabs || vocabs.length === 0) {
-        toast.error("Không có từ vựng nào trong các chủ điểm này.");
+      // Mỗi topic = 1 sheet, giống format import
+      for (const topic of topicsToExport) {
+        const { data: vocabs, error } = await supabase
+          .from("vocabularies")
+          .select("word, ipa, meanings, notes")
+          .eq("topic_id", topic.id);
+
+        if (error) throw error;
+        if (!vocabs || vocabs.length === 0) continue;
+
+        const sheetData = vocabs.map((v) => {
+          const meaningsStr = Array.isArray(v.meanings) ? v.meanings.join(", ") : (v.meanings || "");
+          return {
+            "Từ vựng": v.word || "",
+            "Phiên âm": v.ipa || "",
+            "Nghĩa tiếng Việt": meaningsStr,
+          };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+        ws["!cols"] = [
+          { wch: 25 }, // Từ vựng
+          { wch: 20 }, // Phiên âm
+          { wch: 45 }, // Nghĩa tiếng Việt
+        ];
+
+        // Sheet name max 31 chars (Excel limit), remove invalid chars
+        const safeName = topic.name.replace(/[:\\/?*\[\]]/g, "").slice(0, 31) || "Sheet";
+        XLSX.utils.book_append_sheet(wb, ws, safeName);
+        totalWords += sheetData.length;
+      }
+
+      if (totalWords === 0) {
+        toast.error("Không có từ vựng nào trong các chủ điểm đã chọn.");
         setIsExporting(false);
         return;
       }
 
-      // Format data for sheet
-      const excelData = vocabs.map((v) => {
-        const parentTopic = topicsToExport.find(t => t.id === v.topic_id);
-        const meaningsStr = Array.isArray(v.meanings) ? v.meanings.join(", ") : v.meanings;
-        return {
-          "Chủ Điểm": parentTopic?.name || "Unknown",
-          "Word": v.word,
-          "IPA": v.ipa || "",
-          "Meanings": meaningsStr || "",
-          "Notes": v.notes || ""
-        };
-      });
-
-      // Generate worksheet
-      const ws = XLSX.utils.json_to_sheet(excelData);
-      
-      // Adjust column width for better readability
-      ws['!cols'] = [
-        { wch: 25 }, // Chủ điểm
-        { wch: 20 }, // Word
-        { wch: 15 }, // IPA
-        { wch: 40 }, // Meanings
-        { wch: 30 }  // Notes
-      ];
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "TuVung");
-
       XLSX.writeFile(wb, `${filename}.xlsx`);
-      toast.success("Xuất file Excel thành công!");
+      toast.success(`Xuất thành công ${totalWords} từ vựng (${wb.SheetNames.length} sheet)!`);
       setIsExportExcelModalOpen(false);
     } catch (err) {
       const error = err as Error;
