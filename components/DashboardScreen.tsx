@@ -23,6 +23,7 @@ interface DashboardScreenProps {
   userCode: string;
   topics: Topic[];
   currentStreak: number;
+  hasStudiedToday: boolean;
   displayName: string;
   onUpdateDisplayName: (newName: string) => Promise<void>;
 }
@@ -31,6 +32,7 @@ export default function DashboardScreen({
   userCode,
   topics,
   currentStreak,
+  hasStudiedToday,
   displayName,
   onUpdateDisplayName,
 }: DashboardScreenProps) {
@@ -223,9 +225,18 @@ export default function DashboardScreen({
             </div>
             
             {currentStreak > 0 && (
-              <div className="flex items-center self-start sm:self-auto gap-2 px-4 py-2 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 shadow-sm" title={`Chuỗi học ${currentStreak} ngày`}>
-                <Flame className="w-5 h-5 text-orange-500 fill-orange-500 animate-pulse" />
-                <span className="font-black text-sm text-orange-600">Chuỗi {currentStreak} ngày</span>
+              <div 
+                className={`flex items-center self-start sm:self-auto gap-2 px-4 py-2 rounded-2xl border shadow-sm ${
+                  hasStudiedToday 
+                    ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200" 
+                    : "bg-slate-100 border-slate-200"
+                }`} 
+                title={`Chuỗi học ${currentStreak} ngày`}
+              >
+                <Flame className={`w-5 h-5 ${hasStudiedToday ? "text-orange-500 fill-orange-500 animate-pulse" : "text-slate-400 fill-slate-300"}`} />
+                <span className={`font-black text-sm ${hasStudiedToday ? "text-orange-600" : "text-slate-500"}`}>
+                  Chuỗi {currentStreak} ngày
+                </span>
               </div>
             )}
           </div>

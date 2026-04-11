@@ -50,10 +50,14 @@ export default function QuizContainer({
   const [score, setScore] = useState(0);
   const [isLoadingWords, setIsLoadingWords] = useState(false);
 
+  const [testedWordIds, setTestedWordIds] = useState<Set<string>>(new Set());
+  const [currentSourceWords, setCurrentSourceWords] = useState<Vocabulary[]>([]);
+
   // Trạng thái câu hỏi hiện tại
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [isAnswered, setIsAnswered] = useState(false);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
 
@@ -85,7 +89,8 @@ export default function QuizContainer({
         return;
       }
       setAllWords(words);
-      generateQuiz(words);
+      setTestedWordIds(new Set());
+      generateQuiz(words, false, new Set());
     } catch (err) {
       const error = err as Error;
       console.error("Fetch quiz words error:", error);
@@ -95,11 +100,30 @@ export default function QuizContainer({
     }
   };
 
-  const generateQuiz = (wordsOverride?: Vocabulary[]) => {
+  const generateQuiz = (wordsOverride?: Vocabulary[], isRetry: boolean = false, overrideTestedIds?: Set<string>) => {
     const words = wordsOverride || allWords;
-    const sourceWords = [...words]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, questionCount);
+    let sourceWords: Vocabulary[] = [];
+    let currentTestedIds = overrideTestedIds || testedWordIds;
+
+    if (isRetry) {
+      sourceWords = currentSourceWords;
+    } else {
+      let remaining = words.filter(w => !currentTestedIds.has(w.id));
+      if (remaining.length === 0) {
+        remaining = words;
+        currentTestedIds = new Set();
+      }
+      if (questionCount >= 9999) {
+        sourceWords = [...remaining].sort(() => 0.5 - Math.random());
+      } else {
+        sourceWords = [...remaining].slice(0, questionCount);
+      }
+      
+      sourceWords.forEach(w => currentTestedIds.add(w.id));
+    }
+
+    setCurrentSourceWords(sourceWords);
+    setTestedWordIds(new Set(currentTestedIds));
 
     const newQuestions = sourceWords.map((wordObj) => {
       let promptText = wordObj.word;
@@ -143,6 +167,7 @@ export default function QuizContainer({
     setCurrentIndex(0);
     setScore(0);
     setIsAnswered(false);
+    setIsAnswerCorrect(null);
     setSelectedAnswer(null);
     setInputText("");
     setQuizState("playing");
@@ -153,13 +178,10 @@ export default function QuizContainer({
     const newQuestions = [...questions];
 
     if (!isCorrect) {
-      playFailSound();
       const clonedQ = { ...currentQ, fails: currentQ.fails + 1 };
       newQuestions.push(clonedQ);
       newQuestions[currentIndex] = { ...currentQ, fails: currentQ.fails + 1 };
       setQuestions(newQuestions);
-    } else {
-      playSuccessSound();
     }
 
     const isLast = currentIndex === newQuestions.length - 1;
@@ -170,6 +192,7 @@ export default function QuizContainer({
     } else {
       setCurrentIndex((prev) => prev + 1);
       setIsAnswered(false);
+      setIsAnswerCorrect(null);
       setSelectedAnswer(null);
       setInputText("");
     }
@@ -181,9 +204,17 @@ export default function QuizContainer({
     setSelectedAnswer(option);
 
     const isCorrect = option === questions[currentIndex].correctAnswerText;
-    if (isCorrect && questions[currentIndex].fails === 0)
-      setScore((prev) => prev + 1);
-    setTimeout(() => handleNextQuestion(isCorrect), 1500);
+    setIsAnswerCorrect(isCorrect);
+
+    if (isCorrect) {
+      playSuccessSound();
+      if (questions[currentIndex].fails === 0) setScore((prev) => prev + 1);
+    } else {
+      playFailSound();
+    }
+
+    const delay = isCorrect ? 800 : 1500;
+    setTimeout(() => handleNextQuestion(isCorrect), delay);
   };
 
   const handleTypingSubmit = (e: React.FormEvent) => {
@@ -216,8 +247,17 @@ export default function QuizContainer({
         (ans.length >= 2 && userAnswer.includes(ans)),
     );
 
-    if (isCorrect && currentQ.fails === 0) setScore((prev) => prev + 1);
-    setTimeout(() => handleNextQuestion(isCorrect), 2000);
+    setIsAnswerCorrect(isCorrect);
+
+    if (isCorrect) {
+      playSuccessSound();
+      if (currentQ.fails === 0) setScore((prev) => prev + 1);
+    } else {
+      playFailSound();
+    }
+
+    const delay = isCorrect ? 800 : 2000;
+    setTimeout(() => handleNextQuestion(isCorrect), delay);
   };
 
   if (quizState === "topic_selection") {
@@ -239,50 +279,59 @@ export default function QuizContainer({
           </p>
         ) : (
           <>
-            <div className="max-h-[40vh] overflow-y-auto overflow-x-hidden w-full mb-6 bg-slate-50 border border-slate-100 rounded-xl text-left hide-scroll shadow-inner">
-              {Object.entries(
-                topics.reduce(
-                  (acc, topic) => {
-                    const cat =
-                      topic.category_name ||
-                      (topic.user_code === userCode
-                        ? "Từ vựng cá nhân"
-                        : "Chủ điểm hệ thống");
-                    if (!acc[cat]) acc[cat] = [];
-                    acc[cat].push(topic);
-                    return acc;
-                  },
-                  {} as Record<string, Topic[]>,
-                ),
-              )
-                .sort(([a], [b]) => {
-                  if (a === "Từ vựng cá nhân") return -1;
-                  if (b === "Từ vựng cá nhân") return 1;
-                  if (a.toUpperCase() === "ATHENA ENGLISH") return -1;
-                  if (b.toUpperCase() === "ATHENA ENGLISH") return 1;
-                  return a.localeCompare(b);
-                })
-                .map(([catName, topicsInCategory]) => {
-                  const expanded = expandedCats[catName] !== false;
-                  return (
-                    <div key={catName} className="pb-2">
-                      <div
-                        onClick={() => toggleCat(catName)}
-                        className="px-5 py-3 text-sm font-bold text-slate-700 bg-white sticky top-0 z-10 border-b border-slate-200 flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-slate-50 shadow-sm"
-                      >
-                        <div className="flex items-center gap-2 text-indigo-600">
-                          <BookOpen size={18} /> <span className="text-slate-700">{catName}</span>
-                        </div>
-                        {expanded ? (
-                          <ChevronDown size={18} className="text-slate-400" />
-                        ) : (
-                          <ChevronRight size={18} className="text-slate-400" />
-                        )}
-                      </div>
+        {(() => {
+          const groupedTopics = topics.reduce(
+            (acc, topic) => {
+              const cat =
+                topic.category_name ||
+                (topic.user_code === userCode
+                  ? "Từ vựng cá nhân"
+                  : "Chủ điểm hệ thống");
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(topic);
+              return acc;
+            },
+            {} as Record<string, Topic[]>,
+          );
 
-                      {expanded && (
-                        <div className="px-5 py-4 flex flex-wrap gap-2">
-                          {topicsInCategory.map((topic) => {
+          if (!groupedTopics["Từ vựng cá nhân"]) {
+            groupedTopics["Từ vựng cá nhân"] = [];
+          }
+
+          const sortedCats = Object.entries(groupedTopics).sort(([a], [b]) => {
+            if (a === "Từ vựng cá nhân") return -1;
+            if (b === "Từ vựng cá nhân") return 1;
+            if (a.toUpperCase() === "ATHENA ENGLISH") return -1;
+            if (b.toUpperCase() === "ATHENA ENGLISH") return 1;
+            return a.localeCompare(b);
+          });
+
+          return (
+            <div className="max-h-[40vh] overflow-y-auto overflow-x-hidden w-full mb-6 bg-slate-50 border border-slate-100 rounded-xl text-left hide-scroll shadow-inner">
+              {sortedCats.map(([catName, topicsInCategory]) => {
+                const expanded = expandedCats[catName] !== false;
+                return (
+                  <div key={catName} className="pb-2">
+                    <div
+                      onClick={() => toggleCat(catName)}
+                      className="px-5 py-3 text-sm font-bold text-slate-700 bg-white sticky top-0 z-10 border-b border-slate-200 flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-slate-50 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2 text-indigo-600">
+                        <BookOpen size={18} /> <span className="text-slate-700">{catName}</span>
+                      </div>
+                      {expanded ? (
+                        <ChevronDown size={18} className="text-slate-400" />
+                      ) : (
+                        <ChevronRight size={18} className="text-slate-400" />
+                      )}
+                    </div>
+
+                    {expanded && (
+                      <div className="px-5 py-4 flex flex-wrap gap-2">
+                        {topicsInCategory.length === 0 ? (
+                          <div className="text-sm italic text-slate-400">Chưa có chủ điểm nào</div>
+                        ) : (
+                          topicsInCategory.map((topic) => {
                             const isSel = selectedTopics.includes(topic.id);
                             return (
                               <button
@@ -304,13 +353,16 @@ export default function QuizContainer({
                                 {topic.name}
                               </button>
                             );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          );
+        })()}
             <button
               onClick={() => setQuizState("config")}
               disabled={selectedTopics.length === 0}
@@ -477,11 +529,11 @@ export default function QuizContainer({
               disabled={isAnswered}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className={`w-full p-5 rounded-2xl border-2 text-center text-2xl font-black outline-none transition-all shadow-inner ${isAnswered ? (normalizeText(inputText) === normalizeText(currentQ.correctAnswerText) ? "border-green-500 bg-green-50 text-green-800" : "border-rose-500 bg-rose-50 text-rose-800") : "border-slate-200 focus:border-indigo-500 focus:shadow-indigo-100"}`}
+              className={`w-full p-5 rounded-2xl border-2 text-center text-2xl font-black outline-none transition-all shadow-inner ${isAnswered ? (isAnswerCorrect ? "border-green-500 bg-green-50 text-green-800" : "border-rose-500 bg-rose-50 text-rose-800") : "border-slate-200 focus:border-indigo-500 focus:shadow-indigo-100"}`}
               placeholder="Nhập câu trả lời..."
             />
-            {isAnswered && (
-                <div className={`p-5 rounded-2xl border text-center transition-all animate-fade-in ${normalizeText(inputText) === normalizeText(currentQ.correctAnswerText) ? "bg-green-100 border-green-200 text-green-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+            {isAnswered && !isAnswerCorrect && (
+                <div className="p-5 rounded-2xl border text-center transition-all animate-fade-in bg-amber-50 border-amber-200 text-amber-800">
                   <p className="text-xs font-black uppercase tracking-widest opacity-60 mb-1">Đáp án chính xác</p>
                   <p className="font-black text-3xl tracking-tight">
                     {currentQ.correctAnswerText}
@@ -521,14 +573,30 @@ export default function QuizContainer({
             ? "Đỉnh cao! Bạn đã trả lời đúng tất cả các câu hỏi ngay trong lượt đầu tiên."
             : `Hệ thống đã hỗ trợ bạn ghi nhớ toàn bộ ${baseCount} từ vựng. Bạn cần thêm ${questions.length - baseCount} lượt nhắc lại để hoàn thành.`}
         </p>
-        <button
-          onClick={() => {
-            setQuizState("topic_selection");
-          }}
-          className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 text-lg"
-        >
-          Trở về màn hình chọn chủ đề
-        </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button
+              onClick={() => generateQuiz(undefined, true)}
+              className="flex-1 py-4 bg-slate-100 text-slate-700 font-black rounded-2xl hover:bg-slate-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
+            >
+              Làm lại
+            </button>
+            <button
+              onClick={() => generateQuiz(undefined, false)}
+              className="flex-1 py-4 bg-indigo-100 text-indigo-700 font-black rounded-2xl hover:bg-indigo-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
+            >
+              Làm tiếp {Math.min(questionCount, allWords.length)} câu
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setQuizState("topic_selection");
+            }}
+            className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 text-[15px] mt-2"
+          >
+            Trở về màn hình chọn chủ đề
+          </button>
+        </div>
       </div>
     );
   }

@@ -35,7 +35,6 @@ export default function TopicListView({
   setIsAddTopicModalOpen,
   onSelectTopic,
 }: TopicListViewProps) {
-  // Nhóm topics theo category_name
   const groupedTopics = topics.reduce(
     (acc, topic) => {
       const cat =
@@ -47,6 +46,10 @@ export default function TopicListView({
     },
     {} as Record<string, Topic[]>
   );
+
+  if (!groupedTopics["Từ vựng cá nhân"]) {
+    groupedTopics["Từ vựng cá nhân"] = [];
+  }
 
   // Sắp xếp danh sách category
   const sortedCategories = Object.keys(groupedTopics).sort((a, b) => {
@@ -110,29 +113,21 @@ export default function TopicListView({
       </div>
 
       <div className="p-4 sm:p-8 bg-slate-50/30">
-        {topics.length === 0 ? (
-          <div className="text-center py-20 px-4">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-              <BookOpen size={32} />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-600">
-              Chưa có chủ điểm nào
-            </h3>
-            <p className="text-slate-400 mt-2 max-w-xs mx-auto">
-              Hãy tạo chủ điểm mới hoặc nhập từ file Excel để bắt đầu học tập.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {sortedCategories.map((catName) => (
-              <div key={catName} className="relative">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                    {catName}
-                  </span>
-                  <div className="h-px flex-1 bg-slate-200/60"></div>
-                </div>
+        <div className="space-y-8">
+          {sortedCategories.map((catName) => (
+            <div key={catName} className="relative">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                  {catName}
+                </span>
+                <div className="h-px flex-1 bg-slate-200/60"></div>
+              </div>
 
+              {groupedTopics[catName].length === 0 ? (
+                <div className="py-6 text-center text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-200 italic font-medium">
+                  Chưa có chủ điểm nào.
+                </div>
+              ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupedTopics[catName].map((topic) => (
                     <button
@@ -163,10 +158,10 @@ export default function TopicListView({
                     </button>
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

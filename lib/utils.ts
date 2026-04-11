@@ -5,28 +5,49 @@ export function maskUserCode(code: string | null): string {
   return code.slice(0, 3) + "***";
 }
 
+let globalAudioContext: AudioContext | null = null;
+const getAudioContext = () => {
+  if (typeof window === "undefined") return null;
+  if (!globalAudioContext) {
+    const AudioContextClass = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
+    if (AudioContextClass) {
+      globalAudioContext = new AudioContextClass();
+    }
+  }
+  return globalAudioContext;
+};
+
 // Play success sound using Web Audio API
 export const playSuccessSound = () => {
   try {
-    const AudioContextClass = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    
+    const play = () => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); // A6
+      osc.type = "sine";
+      const t = ctx.currentTime;
+      osc.frequency.setValueAtTime(880, t); // A5
+      osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1); // A6
 
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05); // Volume
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      gainNode.gain.setValueAtTime(0, t);
+      gainNode.gain.linearRampToValueAtTime(0.3, t + 0.05); // Volume
+      gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
 
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    };
+
+    if (ctx.state === "suspended") {
+      ctx.resume().then(play);
+    } else {
+      play();
+    }
   } catch (e) {
     console.error(e);
   }
@@ -34,25 +55,34 @@ export const playSuccessSound = () => {
 
 export const playFailSound = () => {
   try {
-    const AudioContextClass = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    
+    const play = () => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(150, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.2);
+      osc.type = "triangle";
+      const t = ctx.currentTime;
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
 
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      gainNode.gain.setValueAtTime(0, t);
+      gainNode.gain.linearRampToValueAtTime(0.3, t + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
 
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    };
+
+    if (ctx.state === "suspended") {
+      ctx.resume().then(play);
+    } else {
+      play();
+    }
   } catch (e) {
     console.error(e);
   }

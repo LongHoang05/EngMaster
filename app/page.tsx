@@ -54,8 +54,8 @@ export default function EngMaster() {
   // const [isTopicLoading, setIsTopicLoading] = useState(false);
   // const [isVocabLoading, setIsVocabLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  // const [isExporting, setIsExporting] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [hasStudiedToday, setHasStudiedToday] = useState(false);
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
   const [isEditWordModalOpen, setIsEditWordModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState<Vocabulary | null>(null);
@@ -101,7 +101,7 @@ export default function EngMaster() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("current_streak, display_name")
+        .select("current_streak, display_name, last_active_date")
         .eq("user_code", code)
         .single();
 
@@ -110,6 +110,15 @@ export default function EngMaster() {
       if (data) {
         setCurrentStreak(data.current_streak || 0);
         setDisplayName(data.display_name || "Học giả bí ẩn");
+        
+        if (data.last_active_date) {
+            setHasStudiedToday(
+              new Date(data.last_active_date).toLocaleDateString("en-CA") ===
+                new Date().toLocaleDateString("en-CA")
+            );
+        } else {
+            setHasStudiedToday(false);
+        }
       } else {
         // Create user record if not exists
         await supabase.from("users").insert({
@@ -252,8 +261,48 @@ export default function EngMaster() {
   const handleUpdateStreak = async () => {
     if (!userCode) return;
     try {
-      await supabase.rpc("update_user_streak", { u_code: userCode });
-      syncUserProfile(userCode);
+      // Manual streak calculation instead of RPC
+      const { data: user, error: fetchErr } = await supabase
+        .from("users")
+        .select("current_streak, last_active_date")
+        .eq("user_code", userCode)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+
+      const todayStr = new Date().toLocaleDateString("en-CA");
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
+
+      let newStreak = user.current_streak || 0;
+      const lastActive = user.last_active_date;
+
+      let needsUpdate = false;
+
+      if (!lastActive || lastActive === yesterdayStr) {
+        newStreak += 1;
+        needsUpdate = true;
+      } else if (lastActive !== todayStr) {
+        newStreak = 1;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate || lastActive !== todayStr) {
+        const { error: updateErr } = await supabase
+          .from("users")
+          .update({
+            current_streak: newStreak,
+            last_active_date: todayStr,
+          })
+          .eq("user_code", userCode);
+
+        if (updateErr) throw updateErr;
+      }
+
+      setCurrentStreak(newStreak);
+      setHasStudiedToday(true);
+      toast.success("Đã ghi nhận quá trình học tập hôm nay!");
     } catch (e) {
       console.error("Streak sync error", e);
     }
@@ -438,6 +487,7 @@ export default function EngMaster() {
             userCode={userCode}
             topics={topics}
             currentStreak={currentStreak}
+            hasStudiedToday={hasStudiedToday}
             displayName={displayName}
             onUpdateDisplayName={handleUpdateDisplayName}
           />
