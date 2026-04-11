@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -54,7 +54,6 @@ export default function EngMaster() {
   // UI State
   // const [isTopicLoading, setIsTopicLoading] = useState(false);
   // const [isVocabLoading, setIsVocabLoading] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [hasStudiedToday, setHasStudiedToday] = useState(false);
@@ -71,8 +70,6 @@ export default function EngMaster() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [tempName, setTempName] = useState("");
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 1. AUTH
   useEffect(() => {
@@ -347,79 +344,6 @@ export default function EngMaster() {
   };
 
   // 5. EXCEL LOGIC
-  interface ExcelRow {
-    Word?: string;
-    word?: string;
-    IPA?: string;
-    ipa?: string;
-    Meanings?: string;
-    meanings?: string;
-    Meaning?: string;
-    meaning?: string;
-    Notes?: string;
-    notes?: string;
-  }
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: "binary" });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws) as ExcelRow[];
-
-        if (data.length === 0) {
-          toast.error("File trống hoặc không hợp lệ.");
-          return;
-        }
-
-        const name = file.name.replace(/\.[^/.]+$/, "");
-        const { data: topic, error: tErr } = await supabase
-          .from("topics")
-          .insert({ name, user_code: userCode })
-          .select()
-          .single();
-
-        if (tErr) throw tErr;
-
-        const vocabs = data
-          .map((row) => ({
-            topic_id: topic.id,
-            word: String(row.Word || row.word || ""),
-            ipa: String(row.IPA || row.ipa || ""),
-            meanings: row.Meanings
-              ? String(row.Meanings)
-                  .split(",")
-                  .map((m) => m.trim())
-              : [String(row.meanings || row.Meaning || row.meaning || "")],
-            notes: String(row.Notes || row.notes || ""),
-          }))
-          .filter((v) => v.word);
-
-        const { error: vErr } = await supabase
-          .from("vocabularies")
-          .insert(vocabs);
-        if (vErr) throw vErr;
-
-        toast.success(`Nhập thành công ${vocabs.length} từ!`);
-        fetchTopics();
-      } catch (err) {
-        const error = err as Error;
-        toast.error("Lỗi nhập Excel: " + error.message);
-      } finally {
-        setIsImporting(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
   const handleExportExcel = async (topicsToExport: Topic[], filename: string) => {
     if (topicsToExport.length === 0) {
       toast.error("Không có chủ điểm nào để xuất.");
@@ -560,10 +484,8 @@ export default function EngMaster() {
               <TopicListView
                 topics={topics}
                 userCode={userCode}
-                isImporting={isImporting}
                 isExporting={isExporting}
-                fileInputRef={fileInputRef}
-                handleFileSelect={handleFileSelect}
+                onImportSuccess={fetchTopics}
                 handleExportExcel={handleExportExcel}
                 setIsAddTopicModalOpen={setIsAddTopicModalOpen}
                 setIsExportExcelModalOpen={setIsExportExcelModalOpen}

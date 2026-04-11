@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  Upload,
   Plus,
   FileSpreadsheet,
   BookOpen,
@@ -11,14 +10,13 @@ import {
   Table,
 } from "lucide-react";
 import { Topic } from "@/lib/types";
+import ImportExcelButton from "@/components/ImportExcelButton";
 
 interface TopicListViewProps {
   topics: Topic[];
   userCode: string;
-  isImporting: boolean;
   isExporting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImportSuccess: () => void;
   handleExportExcel: (topics: Topic[], name: string) => void;
   setIsAddTopicModalOpen: (open: boolean) => void;
   setIsExportExcelModalOpen: (open: boolean) => void;
@@ -28,10 +26,8 @@ interface TopicListViewProps {
 export default function TopicListView({
   topics,
   userCode,
-  isImporting,
   isExporting,
-  fileInputRef,
-  handleFileSelect,
+  onImportSuccess,
   handleExportExcel,
   setIsAddTopicModalOpen,
   setIsExportExcelModalOpen,
@@ -74,25 +70,7 @@ export default function TopicListView({
           </p>
         </div>
         <div className="w-full sm:w-auto flex flex-wrap gap-2">
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isImporting}
-              className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-green-200 disabled:opacity-50 whitespace-nowrap"
-            >
-              {isImporting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Upload size={16} />
-              )}
-              Nhập Excel
-            </button>
+            <ImportExcelButton userCode={userCode} onImportSuccess={onImportSuccess} />
             <button
               onClick={() => setIsExportExcelModalOpen(true)}
               disabled={isExporting}
