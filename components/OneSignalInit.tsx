@@ -47,6 +47,12 @@ export default function OneSignalInit() {
           
           if (permission) {
             console.log("[OneSignal] User is subscribed to notifications.");
+            const subId = oneSignal.User.PushSubscription.id;
+            if (subId) {
+              console.log("[OneSignal] Your Subscription ID:", subId);
+            } else {
+              console.log("[OneSignal] User is subscribed but Subscription ID not found yet. Waiting...");
+            }
           } else {
             console.log("[OneSignal] User is NOT yet subscribed. Please click the button to enable.");
           }
