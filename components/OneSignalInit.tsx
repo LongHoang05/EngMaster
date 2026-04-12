@@ -14,6 +14,13 @@ export default function OneSignalInit() {
       return;
     }
 
+    // Skip OneSignal on localhost — it only works on the registered production domain
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocalhost) {
+      console.info("[OneSignal] Skipped on localhost. Will only run on production domain.");
+      return;
+    }
+
     // Dynamically load OneSignal SDK
     const script = document.createElement("script");
     script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
@@ -22,21 +29,20 @@ export default function OneSignalInit() {
       const OneSignal = (window as any).OneSignalDeferred || [];
       (window as any).OneSignalDeferred = OneSignal;
       OneSignal.push(async function (oneSignal: any) {
-        await oneSignal.init({
-          appId,
-          allowLocalhostAsSecureOrigin: true,
-          notifyButton: {
-            enable: false, // We'll use our own custom button
-          },
-        });
+        try {
+          await oneSignal.init({
+            appId,
+            notifyButton: {
+              enable: false, // We'll use our own custom button
+            },
+          });
+        } catch (err) {
+          console.warn("[OneSignal] Init failed:", err);
+        }
       });
       setInitialized(true);
     };
     document.head.appendChild(script);
-
-    return () => {
-      // Cleanup: don't remove script as OneSignal expects it to persist
-    };
   }, [initialized]);
 
   return null;
