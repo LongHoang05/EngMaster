@@ -26,12 +26,10 @@ export default function OneSignalInit() {
     script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
     script.defer = true;
     script.onload = () => {
-      console.log("[OneSignal] SDK script loaded.");
       const OneSignal = (window as any).OneSignalDeferred || [];
       (window as any).OneSignalDeferred = OneSignal;
       
       OneSignal.push(async function (oneSignal: any) {
-        console.log("[OneSignal] Initializing with App ID:", appId);
         try {
           await oneSignal.init({
             appId,
@@ -39,18 +37,16 @@ export default function OneSignalInit() {
               enable: false,
             },
           });
-          console.log("[OneSignal] Initialization complete.");
           
           // Check permission state immediately
           const permission = oneSignal.Notifications.permission;
-          console.log("[OneSignal] Current notification permission:", permission);
           
-          // Note: Notification clicks (Quiz Action Buttons) are now handled 
+          // Note: Notification clicks (Quiz Action Buttons) are handled 
           // background-to-background in public/OneSignalSDKWorker.js 
-          // to prevent opening unnecessary tabs.
           
           setInitialized(true);
         } catch (err) {
+          // Keep errors for troubleshooting
           console.warn("[OneSignal] Init failed:", err);
         }
       });
