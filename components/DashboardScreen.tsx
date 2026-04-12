@@ -62,13 +62,26 @@ export default function DashboardScreen({
   const handleEnableNotifications = async () => {
     setNotifStatus("loading");
     try {
-      const OneSignal = (window as any).OneSignalDeferred || [];
-      (window as any).OneSignalDeferred = OneSignal;
-      OneSignal.push(async function (oneSignal: any) {
-        await oneSignal.Slidedown.promptPush();
-        const permission = await oneSignal.Notifications.permission;
-        setNotifStatus(permission ? "subscribed" : "idle");
-      });
+      // Try OneSignal first
+      const OneSignalDeferred = (window as any).OneSignalDeferred;
+      if (OneSignalDeferred && typeof OneSignalDeferred.push === "function") {
+        OneSignalDeferred.push(async function (oneSignal: any) {
+          try {
+            await oneSignal.Notifications.requestPermission();
+            const permission = oneSignal.Notifications.permission;
+            setNotifStatus(permission ? "subscribed" : "idle");
+          } catch (err) {
+            console.warn("[OneSignal] requestPermission failed:", err);
+            // Fallback to native browser API
+            const result = await Notification.requestPermission();
+            setNotifStatus(result === "granted" ? "subscribed" : result === "denied" ? "denied" : "idle");
+          }
+        });
+      } else {
+        // Fallback: use native browser notification API
+        const result = await Notification.requestPermission();
+        setNotifStatus(result === "granted" ? "subscribed" : result === "denied" ? "denied" : "idle");
+      }
     } catch (e) {
       console.error("Notification subscription error:", e);
       setNotifStatus("idle");
