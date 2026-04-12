@@ -85,7 +85,7 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Subscribed Users"] }),
+        ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
         headings: { en: heading, vi: heading },
         contents: { en: content, vi: content },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
