@@ -439,9 +439,30 @@ export default function DashboardScreen({
           </div>
 
           {notifStatus === "subscribed" ? (
-            <div className="flex items-center gap-2 px-5 py-3 bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30 rounded-2xl">
-              <CheckCircle2 size={20} className="text-emerald-300" />
-              <span className="text-sm font-bold text-emerald-200">Đã bật</span>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="flex items-center gap-2 px-5 py-3 bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30 rounded-2xl">
+                <CheckCircle2 size={20} className="text-emerald-300" />
+                <span className="text-sm font-bold text-emerald-200">Đã bật</span>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/notifications/daily?secret=engmaster_secret_lhg_push`);
+                    const data = await res.json();
+                    if (data.success) {
+                      alert("🚀 " + data.message);
+                    } else {
+                      alert("⚠️ Lỗi: " + (data.error || "Không rõ nguyên nhân"));
+                    }
+                  } catch (e) {
+                    alert("⚠️ Lỗi kết nối khi gửi test!");
+                  }
+                }}
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-2xl text-white text-sm font-bold transition-all active:scale-95"
+              >
+                <Sparkles size={16} />
+                Gửi thông báo thử
+              </button>
             </div>
           ) : notifStatus === "denied" ? (
             <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl">

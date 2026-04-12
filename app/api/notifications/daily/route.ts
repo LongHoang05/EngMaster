@@ -103,11 +103,17 @@ export async function GET(request: Request) {
       );
     }
 
+    // Logging for Vercel/Server logs
+    console.info(`[Notification] Sent to ${result.recipients || 0} recipients. ID: ${result.id}`);
+
     return NextResponse.json({
       success: true,
-      message: `Notification sent: "${word}"`,
+      message: result.recipients > 0 
+        ? `Notification sent to ${result.recipients} recipients: "${word}"` 
+        : `API success but 0 recipients found for word: "${word}". Make sure you have subscribed on the site.`,
       notificationId: result.id,
       recipientCount: result.recipients,
+      debug: result // Return the raw OneSignal response for debugging
     });
   } catch (error) {
     console.error("Daily notification error:", error);

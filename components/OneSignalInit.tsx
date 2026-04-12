@@ -26,16 +26,30 @@ export default function OneSignalInit() {
     script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
     script.defer = true;
     script.onload = () => {
+      console.log("[OneSignal] SDK script loaded.");
       const OneSignal = (window as any).OneSignalDeferred || [];
       (window as any).OneSignalDeferred = OneSignal;
+      
       OneSignal.push(async function (oneSignal: any) {
+        console.log("[OneSignal] Initializing with App ID:", appId);
         try {
           await oneSignal.init({
             appId,
             notifyButton: {
-              enable: false, // We'll use our own custom button
+              enable: false,
             },
           });
+          console.log("[OneSignal] Initialization complete.");
+          
+          // Check permission state immediately
+          const permission = oneSignal.Notifications.permission;
+          console.log("[OneSignal] Current notification permission:", permission);
+          
+          if (permission) {
+            console.log("[OneSignal] User is subscribed to notifications.");
+          } else {
+            console.log("[OneSignal] User is NOT yet subscribed. Please click the button to enable.");
+          }
         } catch (err) {
           console.warn("[OneSignal] Init failed:", err);
         }
