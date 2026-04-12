@@ -54,13 +54,20 @@ export async function GET(request: Request) {
     const word = targetVocab.word;
     const ipa = targetVocab.ipa || "";
     const correctMeaning = Array.isArray(targetVocab.meanings) ? targetVocab.meanings[0] : targetVocab.meanings;
-
+    
     // Create 3 choices: 1 correct + 2 distractors
-    const choices = vocabs.map((v, index) => ({
-      id: `choice_${index}`,
-      text: Array.isArray(v.meanings) ? v.meanings[0] : v.meanings,
-      isCorrect: index === 0
-    }));
+    const choices = vocabs.map((v, index) => {
+      let text = Array.isArray(v.meanings) ? v.meanings[0] : v.meanings;
+      // Truncate text if too long for buttons
+      if (text.length > 20) text = text.substring(0, 17) + "...";
+      
+      return {
+        id: `choice_${index}`,
+        text: text,
+        fullText: Array.isArray(v.meanings) ? v.meanings[0] : v.meanings,
+        isCorrect: index === 0
+      };
+    });
 
     // Shuffle choices
     const shuffledChoices = [...choices].sort(() => Math.random() - 0.5);
@@ -68,7 +75,7 @@ export async function GET(request: Request) {
 
     // 2. Construct Notification
     const heading = "🧠 Thử thách trắc nghiệm!";
-    const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì?`;
+    const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì? (Bấm nút dưới để chọn)`;
 
     // 3. Send via OneSignal
     const response = await fetch("https://api.onesignal.com/notifications", {
