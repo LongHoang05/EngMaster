@@ -45,22 +45,33 @@ export default function OneSignalInit() {
           const permission = oneSignal.Notifications.permission;
           console.log("[OneSignal] Current notification permission:", permission);
           
-          if (permission) {
-            console.log("[OneSignal] User is subscribed to notifications.");
-            const subId = oneSignal.User.PushSubscription.id;
-            if (subId) {
-              console.log("[OneSignal] Your Subscription ID:", subId);
+          // Handle notification clicks (Action Buttons)
+          oneSignal.Notifications.addEventListener("click", (event: any) => {
+            const { actionId, notification } = event.result;
+            const data = notification.additionalData;
+            
+            console.log("[OneSignal] Notification clicked. Action ID:", actionId);
+            
+            if (actionId) {
+              // User clicked an action button
+              if (data && data.type === "quiz") {
+                if (actionId === data.correct_id) {
+                  alert(`✅ CHÍNH XÁC!\n\n"${data.word}" chính là: ${data.correct_meaning}\nChúc mừng bạn đã ghi nhớ thêm 1 từ! 🎉`);
+                } else {
+                  alert(`❌ SAI RỒI!\n\n"${data.word}" có nghĩa là: ${data.correct_meaning}\nHãy cố gắng ở thử thách sau nhé! 💪`);
+                }
+              }
             } else {
-              console.log("[OneSignal] User is subscribed but Subscription ID not found yet. Waiting...");
+              // User clicked the notification body (not a button)
+              console.log("[OneSignal] Notification body clicked.");
             }
-          } else {
-            console.log("[OneSignal] User is NOT yet subscribed. Please click the button to enable.");
-          }
+          });
+          
+          setInitialized(true);
         } catch (err) {
           console.warn("[OneSignal] Init failed:", err);
         }
       });
-      setInitialized(true);
     };
     document.head.appendChild(script);
   }, [initialized]);
