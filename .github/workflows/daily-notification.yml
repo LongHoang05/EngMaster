@@ -1,0 +1,14 @@
+name: Scheduled Notification
+
+on:
+  schedule:
+    - cron: '0 */2 * * *' # Every 2 hours
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Daily Notification API
+        run: |
+          curl -X GET "https://study-engmaster.vercel.app/api/notifications/daily?secret=${{ secrets.CRON_SECRET }}"
