@@ -509,15 +509,7 @@ export default function DashboardScreen({
                       `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
                     );
                     const data = await res.json();
-                    if (data.success) {
-                      alert(
-                        "🚀 " +
-                          data.message +
-                          (targetParam
-                            ? " (Gửi trực tiếp tới ID của bạn)"
-                            : ""),
-                      );
-                    } else {
+                    if (!data.success) {
                       alert(
                         "⚠️ Lỗi: " + (data.error || "Không rõ nguyên nhân"),
                       );
