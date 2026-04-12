@@ -14,6 +14,9 @@ import {
   Sparkles,
   Loader2,
   Edit2,
+  Bell,
+  BellRing,
+  CheckCircle2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Topic, LeaderboardUser } from "@/lib/types";
@@ -39,10 +42,38 @@ export default function DashboardScreen({
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(displayName);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<"idle" | "loading" | "subscribed" | "denied">("idle");
 
   useEffect(() => {
     setTempName(displayName);
   }, [displayName]);
+
+  // Check notification permission on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        setNotifStatus("subscribed");
+      } else if (Notification.permission === "denied") {
+        setNotifStatus("denied");
+      }
+    }
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    setNotifStatus("loading");
+    try {
+      const OneSignal = (window as any).OneSignalDeferred || [];
+      (window as any).OneSignalDeferred = OneSignal;
+      OneSignal.push(async function (oneSignal: any) {
+        await oneSignal.Slidedown.promptPush();
+        const permission = await oneSignal.Notifications.permission;
+        setNotifStatus(permission ? "subscribed" : "idle");
+      });
+    } catch (e) {
+      console.error("Notification subscription error:", e);
+      setNotifStatus("idle");
+    }
+  };
 
   const handleSaveName = async () => {
     if (!tempName.trim()) {
@@ -350,6 +381,72 @@ export default function DashboardScreen({
                 </p>
               </div>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* 1.5. Notification Banner */}
+      <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl shadow-indigo-200/50 border border-indigo-500/20 p-6 md:p-8 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none"></div>
+        <div className="absolute top-4 right-8 opacity-10 pointer-events-none">
+          <BellRing size={120} className="text-white" />
+        </div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className={`p-3 rounded-2xl shadow-lg ${
+              notifStatus === "subscribed"
+                ? "bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30"
+                : "bg-white/10 backdrop-blur-sm border border-white/20"
+            }`}>
+              {notifStatus === "subscribed" ? (
+                <BellRing size={28} className="text-emerald-300" />
+              ) : (
+                <Bell size={28} className="text-white" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-white">
+                {notifStatus === "subscribed"
+                  ? "🎉 Thông báo đã được bật!"
+                  : notifStatus === "denied"
+                    ? "🔕 Thông báo bị chặn"
+                    : "🔔 Nhận thử thách từ vựng"}
+              </h3>
+              <p className="text-sm text-indigo-100/80 mt-1 max-w-md">
+                {notifStatus === "subscribed"
+                  ? "Bạn sẽ nhận câu hỏi từ vựng mỗi 2 tiếng. Học mọi lúc mọi nơi!"
+                  : notifStatus === "denied"
+                    ? "Hãy vào cài đặt trình duyệt để bật lại quyền thông báo."
+                    : "Nhận thông báo đẩy với câu hỏi từ vựng mỗi 2 tiếng. Ôn tập mọi lúc mọi nơi!"}
+              </p>
+            </div>
+          </div>
+
+          {notifStatus === "subscribed" ? (
+            <div className="flex items-center gap-2 px-5 py-3 bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30 rounded-2xl">
+              <CheckCircle2 size={20} className="text-emerald-300" />
+              <span className="text-sm font-bold text-emerald-200">Đã bật</span>
+            </div>
+          ) : notifStatus === "denied" ? (
+            <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl">
+              <span className="text-sm font-bold text-white/60">Bị chặn bởi trình duyệt</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleEnableNotifications}
+              disabled={notifStatus === "loading"}
+              className="flex items-center gap-2 px-6 py-3.5 bg-white text-indigo-700 font-black rounded-2xl shadow-lg shadow-indigo-900/20 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-wait whitespace-nowrap"
+            >
+              {notifStatus === "loading" ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Bell size={18} />
+              )}
+              {notifStatus === "loading" ? "Đang bật..." : "Bật thông báo"}
+            </button>
           )}
         </div>
       </div>
