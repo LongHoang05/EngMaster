@@ -75,6 +75,9 @@ export async function GET(request: Request) {
     }
 
     // 3. Send push notification via OneSignal REST API
+    const { searchParams: params } = new URL(request.url);
+    const targetId = params.get("target_id");
+
     const response = await fetch("https://api.onesignal.com/notifications", {
       method: "POST",
       headers: {
@@ -83,13 +86,16 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        included_segments: ["Subscribed Users"],
+        // If targetId is provided, send to that specific device. Otherwise, send to all subscribed users.
+        ...(targetId 
+          ? { include_subscription_ids: [targetId] } 
+          : { included_segments: ["Subscribed Users"] }),
         headings: { en: heading, vi: heading },
         contents: { en: content, vi: content },
         chrome_web_icon:
           "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: process.env.NEXT_PUBLIC_APP_URL || "https://engmaster.vercel.app",
-        ttl: 7200, // Notification expires in 2 hours
+        ttl: 7200,
       }),
     });
 

@@ -447,10 +447,23 @@ export default function DashboardScreen({
               <button
                 onClick={async () => {
                   try {
-                    const res = await fetch(`/api/notifications/daily?secret=engmaster_secret_lhg_push`);
+                    // Try to get the specific Subscription ID to bypass segment delay
+                    let targetParam = "";
+                    const OneSignalDeferred = (window as any).OneSignalDeferred;
+                    if (OneSignalDeferred) {
+                      await new Promise((resolve) => {
+                        OneSignalDeferred.push(async function(oneSignal: any) {
+                          const subId = oneSignal.User.PushSubscription.id;
+                          if (subId) targetParam = `&target_id=${subId}`;
+                          resolve(true);
+                        });
+                      });
+                    }
+
+                    const res = await fetch(`/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`);
                     const data = await res.json();
                     if (data.success) {
-                      alert("🚀 " + data.message);
+                      alert("🚀 " + data.message + (targetParam ? " (Gửi trực tiếp tới ID của bạn)" : ""));
                     } else {
                       alert("⚠️ Lỗi: " + (data.error || "Không rõ nguyên nhân"));
                     }
