@@ -20,24 +20,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Fetch 3 random vocabulary words (1 target, 2 distractors)
+    // 1. Fetch 2 random vocabulary words (1 target, 1 distractor for better Chrome compatibility)
     const { count, error: countError } = await supabaseServer
       .from("vocabularies")
       .select("*", { count: "exact", head: true });
 
     if (countError) throw countError;
-    if (!count || count < 3) {
+    if (!count || count < 2) {
       return NextResponse.json({ message: "Not enough vocabularies for a quiz." }, { status: 200 });
     }
 
-    // Generate 3 unique random offsets
+    // Generate 2 unique random offsets
     const offsets = new Set<number>();
-    while (offsets.size < 3) {
+    while (offsets.size < 2) {
       offsets.add(Math.floor(Math.random() * count));
     }
     const offsetArray = Array.from(offsets);
 
-    // Fetch the 3 vocabs
+    // Fetch the 2 vocabs
     const vocabs = [];
     for (const offset of offsetArray) {
       const { data } = await supabaseServer
@@ -48,23 +48,21 @@ export async function GET(request: Request) {
       if (data) vocabs.push(data);
     }
 
-    if (vocabs.length < 3) throw new Error("Failed to fetch 3 vocabs");
+    if (vocabs.length < 2) throw new Error("Failed to fetch 2 vocabs");
 
-    const targetVocab = vocabs[0]; // First one is our target
+    const targetVocab = vocabs[0]; 
     const word = targetVocab.word;
     const ipa = targetVocab.ipa || "";
     const correctMeaning = Array.isArray(targetVocab.meanings) ? targetVocab.meanings[0] : targetVocab.meanings;
-    
-    // Create 3 choices: 1 correct + 2 distractors
+
+    // Create 2 choices
     const choices = vocabs.map((v, index) => {
       let text = Array.isArray(v.meanings) ? v.meanings[0] : v.meanings;
-      // Truncate text if too long for buttons
       if (text.length > 20) text = text.substring(0, 17) + "...";
       
       return {
         id: `choice_${index}`,
         text: text,
-        fullText: Array.isArray(v.meanings) ? v.meanings[0] : v.meanings,
         isCorrect: index === 0
       };
     });
@@ -75,9 +73,10 @@ export async function GET(request: Request) {
 
     // 2. Construct Notification
     const heading = "🧠 Thử thách trắc nghiệm!";
-    const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì? (Bấm nút dưới để chọn)`;
+    const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì?`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://study-engmaster.vercel.app";
 
-    // 3. Send via OneSignal
+    // 3. Send via OneSignal (Using web_buttons for Chrome compatibility)
     const response = await fetch("https://api.onesignal.com/notifications", {
       method: "POST",
       headers: {
@@ -90,10 +89,12 @@ export async function GET(request: Request) {
         headings: { en: heading, vi: heading },
         contents: { en: content, vi: content },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: process.env.NEXT_PUBLIC_APP_URL || "https://study-engmaster.vercel.app",
-        buttons: shuffledChoices.map(c => ({
+        url: appUrl,
+        // MUST use web_buttons for Web SDK v16+ on browsers
+        web_buttons: shuffledChoices.map(c => ({
           id: c.id,
-          text: c.text
+          text: c.text,
+          url: appUrl
         })),
         data: {
           type: "quiz",
@@ -113,7 +114,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Quiz sent for word: "${word}"`,
+      message: `Quiz (2-choice) sent for word: "${word}"`,
       recipientCount: result.recipients,
       notificationId: result.id,
       debug: { word, correctMeaning, shuffledChoices }
