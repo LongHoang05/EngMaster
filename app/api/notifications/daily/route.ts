@@ -74,7 +74,7 @@ export async function GET(request: Request) {
     // 2. Construct Notification
     const heading = "🧠 Thử thách trắc nghiệm!";
     const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì?`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://study-engmaster.vercel.app";
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://study-engmaster.vercel.app") + "?_osp=do_not_open";
 
     // 3. Send via OneSignal (Using web_buttons for Chrome compatibility)
     const response = await fetch("https://api.onesignal.com/notifications", {

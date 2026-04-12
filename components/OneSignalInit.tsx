@@ -45,27 +45,9 @@ export default function OneSignalInit() {
           const permission = oneSignal.Notifications.permission;
           console.log("[OneSignal] Current notification permission:", permission);
           
-          // Handle notification clicks (Action Buttons)
-          oneSignal.Notifications.addEventListener("click", (event: any) => {
-            const { actionId, notification } = event.result;
-            const data = notification.additionalData;
-            
-            console.log("[OneSignal] Notification clicked. Action ID:", actionId);
-            
-            if (actionId) {
-              // User clicked an action button
-              if (data && data.type === "quiz") {
-                if (actionId === data.correct_id) {
-                  alert(`✅ CHÍNH XÁC!\n\n"${data.word}" chính là: ${data.correct_meaning}\nChúc mừng bạn đã ghi nhớ thêm 1 từ! 🎉`);
-                } else {
-                  alert(`❌ SAI RỒI!\n\n"${data.word}" có nghĩa là: ${data.correct_meaning}\nHãy cố gắng ở thử thách sau nhé! 💪`);
-                }
-              }
-            } else {
-              // User clicked the notification body (not a button)
-              console.log("[OneSignal] Notification body clicked.");
-            }
-          });
+          // Note: Notification clicks (Quiz Action Buttons) are now handled 
+          // background-to-background in public/OneSignalSDKWorker.js 
+          // to prevent opening unnecessary tabs.
           
           setInitialized(true);
         } catch (err) {

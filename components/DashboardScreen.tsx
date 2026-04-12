@@ -42,7 +42,9 @@ export default function DashboardScreen({
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(displayName);
   const [isSavingName, setIsSavingName] = useState(false);
-  const [notifStatus, setNotifStatus] = useState<"idle" | "loading" | "subscribed" | "denied">("idle");
+  const [notifStatus, setNotifStatus] = useState<
+    "idle" | "loading" | "subscribed" | "denied"
+  >("idle");
 
   useEffect(() => {
     setTempName(displayName);
@@ -74,13 +76,25 @@ export default function DashboardScreen({
             console.warn("[OneSignal] requestPermission failed:", err);
             // Fallback to native browser API
             const result = await Notification.requestPermission();
-            setNotifStatus(result === "granted" ? "subscribed" : result === "denied" ? "denied" : "idle");
+            setNotifStatus(
+              result === "granted"
+                ? "subscribed"
+                : result === "denied"
+                  ? "denied"
+                  : "idle",
+            );
           }
         });
       } else {
         // Fallback: use native browser notification API
         const result = await Notification.requestPermission();
-        setNotifStatus(result === "granted" ? "subscribed" : result === "denied" ? "denied" : "idle");
+        setNotifStatus(
+          result === "granted"
+            ? "subscribed"
+            : result === "denied"
+              ? "denied"
+              : "idle",
+        );
       }
     } catch (e) {
       console.error("Notification subscription error:", e);
@@ -193,41 +207,53 @@ export default function DashboardScreen({
               user_code: u.user_code,
               name: u.display_name,
               count: u.current_streak || 0,
-            }))
+            })),
           );
         } else if (lbTab === "mastery") {
           // USE RPC for Mastery (Server-side aggregation)
           const { data, error } = await supabase.rpc("get_user_mastery_stats");
           if (error) {
-            console.warn("RPC 'get_user_mastery_stats' not found. Leaderboard for mastery will be unavailable until configured.");
+            console.warn(
+              "RPC 'get_user_mastery_stats' not found. Leaderboard for mastery will be unavailable until configured.",
+            );
             setLeaderboard([]);
           } else {
-            setLeaderboard(data.map((item: { name: string; val: number }) => ({
-               user_code: "", // Not used when we have name
-               name: item.name,
-               count: Number(item.val)
-            })));
+            setLeaderboard(
+              data.map((item: { name: string; val: number }) => ({
+                user_code: "", // Not used when we have name
+                name: item.name,
+                count: Number(item.val),
+              })),
+            );
           }
         } else {
           // USE RPC for Total Vocab (Server-side aggregation)
           const { data, error } = await supabase.rpc("get_user_vocab_stats");
           if (error) {
-            console.warn("RPC 'get_user_vocab_stats' not found. Leaderboard for vocab will be unavailable until configured.");
+            console.warn(
+              "RPC 'get_user_vocab_stats' not found. Leaderboard for vocab will be unavailable until configured.",
+            );
             setLeaderboard([]);
           } else {
-            setLeaderboard(data.map((item: { name: string; val: number }) => ({
-               user_code: "", // Not used when we have name
-               name: item.name,
-               count: Number(item.val)
-            })));
+            setLeaderboard(
+              data.map((item: { name: string; val: number }) => ({
+                user_code: "", // Not used when we have name
+                name: item.name,
+                count: Number(item.val),
+              })),
+            );
           }
         }
       } catch (err: unknown) {
-        const error = err as { message?: string; details?: string; hint?: string }; 
+        const error = err as {
+          message?: string;
+          details?: string;
+          hint?: string;
+        };
         console.error("Lỗi fetch leaderboard details:", {
           message: error?.message || "Unknown error",
           details: error?.details || "",
-          hint: error?.hint || ""
+          hint: error?.hint || "",
         });
         setLeaderboard([]);
       } finally {
@@ -246,7 +272,9 @@ export default function DashboardScreen({
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2">
-              <span className="text-xl md:text-2xl font-bold text-slate-800">Xin chào,</span>
+              <span className="text-xl md:text-2xl font-bold text-slate-800">
+                Xin chào,
+              </span>
               {isEditingName ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -259,40 +287,53 @@ export default function DashboardScreen({
                   />
                 </div>
               ) : (
-                <div onClick={() => setIsEditingName(true)} className="group flex items-center gap-2 cursor-pointer">
+                <div
+                  onClick={() => setIsEditingName(true)}
+                  className="group flex items-center gap-2 cursor-pointer"
+                >
                   <span className="text-xl md:text-2xl font-black text-indigo-600 border-b-2 border-transparent group-hover:border-indigo-200 transition-colors uppercase tracking-tight truncate max-w-[150px] sm:max-w-xs">
                     {isSavingName ? "Đang lưu..." : displayName}
                   </span>
-                  <Edit2 size={18} className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+                  <Edit2
+                    size={18}
+                    className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0"
+                  />
                 </div>
               )}
             </div>
-            
+
             {currentStreak > 0 && (
-              <div 
+              <div
                 className={`flex items-center self-start sm:self-auto gap-2 px-4 py-2 rounded-2xl border shadow-sm ${
-                  hasStudiedToday 
-                    ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200" 
+                  hasStudiedToday
+                    ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200"
                     : "bg-slate-100 border-slate-200"
-                }`} 
+                }`}
                 title={`Chuỗi học ${currentStreak} ngày`}
               >
-                <Flame className={`w-5 h-5 ${hasStudiedToday ? "text-orange-500 fill-orange-500 animate-pulse" : "text-slate-400 fill-slate-300"}`} />
-                <span className={`font-black text-sm ${hasStudiedToday ? "text-orange-600" : "text-slate-500"}`}>
+                <Flame
+                  className={`w-5 h-5 ${hasStudiedToday ? "text-orange-500 fill-orange-500 animate-pulse" : "text-slate-400 fill-slate-300"}`}
+                />
+                <span
+                  className={`font-black text-sm ${hasStudiedToday ? "text-orange-600" : "text-slate-500"}`}
+                >
                   Chuỗi {currentStreak} ngày
                 </span>
               </div>
             )}
           </div>
-          
+
           <div className="h-px w-full bg-slate-100 mb-6"></div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp className="text-indigo-500" size={24} /> Tiến độ ghi nhớ cá nhân
+                <TrendingUp className="text-indigo-500" size={24} /> Tiến độ ghi
+                nhớ cá nhân
               </h2>
-              <p className="text-sm text-slate-500 mt-1">Trạng thái ôn tập của bạn</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Trạng thái ôn tập của bạn
+              </p>
             </div>
             <span className="text-sm self-start sm:self-auto font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl shadow-sm flex items-center gap-2">
               <BookOpen size={16} className="text-indigo-500 shrink-0" />
@@ -409,11 +450,13 @@ export default function DashboardScreen({
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-2xl shadow-lg ${
-              notifStatus === "subscribed"
-                ? "bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30"
-                : "bg-white/10 backdrop-blur-sm border border-white/20"
-            }`}>
+            <div
+              className={`p-3 rounded-2xl shadow-lg ${
+                notifStatus === "subscribed"
+                  ? "bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30"
+                  : "bg-white/10 backdrop-blur-sm border border-white/20"
+              }`}
+            >
               {notifStatus === "subscribed" ? (
                 <BellRing size={28} className="text-emerald-300" />
               ) : (
@@ -439,10 +482,12 @@ export default function DashboardScreen({
           </div>
 
           {notifStatus === "subscribed" ? (
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex sm:flex-row items-center gap-3">
               <div className="flex items-center gap-2 px-5 py-3 bg-emerald-400/20 backdrop-blur-sm border border-emerald-300/30 rounded-2xl">
                 <CheckCircle2 size={20} className="text-emerald-300" />
-                <span className="text-sm font-bold text-emerald-200">Đã bật</span>
+                <span className="text-sm font-bold text-emerald-200">
+                  Đã bật
+                </span>
               </div>
               <button
                 onClick={async () => {
@@ -452,7 +497,7 @@ export default function DashboardScreen({
                     const OneSignalDeferred = (window as any).OneSignalDeferred;
                     if (OneSignalDeferred) {
                       await new Promise((resolve) => {
-                        OneSignalDeferred.push(async function(oneSignal: any) {
+                        OneSignalDeferred.push(async function (oneSignal: any) {
                           const subId = oneSignal.User.PushSubscription.id;
                           if (subId) targetParam = `&target_id=${subId}`;
                           resolve(true);
@@ -460,12 +505,22 @@ export default function DashboardScreen({
                       });
                     }
 
-                    const res = await fetch(`/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`);
+                    const res = await fetch(
+                      `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
+                    );
                     const data = await res.json();
                     if (data.success) {
-                      alert("🚀 " + data.message + (targetParam ? " (Gửi trực tiếp tới ID của bạn)" : ""));
+                      alert(
+                        "🚀 " +
+                          data.message +
+                          (targetParam
+                            ? " (Gửi trực tiếp tới ID của bạn)"
+                            : ""),
+                      );
                     } else {
-                      alert("⚠️ Lỗi: " + (data.error || "Không rõ nguyên nhân"));
+                      alert(
+                        "⚠️ Lỗi: " + (data.error || "Không rõ nguyên nhân"),
+                      );
                     }
                   } catch (e) {
                     alert("⚠️ Lỗi kết nối khi gửi test!");
@@ -479,7 +534,9 @@ export default function DashboardScreen({
             </div>
           ) : notifStatus === "denied" ? (
             <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl">
-              <span className="text-sm font-bold text-white/60">Bị chặn bởi trình duyệt</span>
+              <span className="text-sm font-bold text-white/60">
+                Bị chặn bởi trình duyệt
+              </span>
             </div>
           ) : (
             <button
@@ -546,7 +603,9 @@ export default function DashboardScreen({
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setLbTab(tab.id as "vocab" | "streak" | "mastery")}
+                  onClick={() =>
+                    setLbTab(tab.id as "vocab" | "streak" | "mastery")
+                  }
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap grow sm:grow-0 ${
                     lbTab === tab.id
                       ? tab.id === "streak"
@@ -640,9 +699,9 @@ export default function DashboardScreen({
                                 : "text-slate-800"
                           }`}
                         >
-                          {isCurrentUser 
-                            ? (user.name || user.user_code) 
-                            : (user.name || maskUserCode(user.user_code))}
+                          {isCurrentUser
+                            ? user.name || user.user_code
+                            : user.name || maskUserCode(user.user_code)}
                         </div>
                         {isCurrentUser && (
                           <span className="text-[10px] md:text-xs font-black bg-indigo-600 text-white px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-lg shadow-indigo-200">
