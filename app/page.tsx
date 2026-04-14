@@ -218,7 +218,7 @@ export default function EngMaster() {
 
   // 4. ACTION HANDLERS
   const handleDeleteTopic = async (topicId: string, topicName: string) => {
-    if (!confirm(`Xóa chủ điểm "${topicName}" và TẤT CẢ từ vựng bên trong?`))
+    if (!confirm(`Xóa chủ đề "${topicName}" và TẤT CẢ từ vựng bên trong?`))
       return;
 
     try {
@@ -227,7 +227,7 @@ export default function EngMaster() {
         .delete()
         .eq("id", topicId);
       if (error) throw error;
-      toast.success("Đã xóa chủ điểm.");
+      toast.success("Đã xóa chủ đề.");
       setSelectedTopic(null);
       fetchTopics();
     } catch (err) {
@@ -346,7 +346,7 @@ export default function EngMaster() {
   // 5. EXCEL LOGIC
   const handleExportExcel = async (topicsToExport: Topic[], filename: string) => {
     if (topicsToExport.length === 0) {
-      toast.error("Không có chủ điểm nào để xuất.");
+      toast.error("Không có chủ đề nào để xuất.");
       return;
     }
 
@@ -388,7 +388,7 @@ export default function EngMaster() {
       }
 
       if (totalWords === 0) {
-        toast.error("Không có từ vựng nào trong các chủ điểm đã chọn.");
+        toast.error("Không có từ vựng nào trong các chủ đề đã chọn.");
         setIsExporting(false);
         return;
       }

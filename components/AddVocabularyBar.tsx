@@ -165,7 +165,7 @@ export default function AddVocabularyBar({
               placeholder={
                 isOwner
                   ? "Nhập từ tiếng Anh (nhấn Enter để tra)..."
-                  : "Chủ điểm được chia sẻ"
+                  : "Chủ đề được chia sẻ"
               }
               readOnly={!isOwner}
               className="w-full pl-14 pr-6 py-4 md:py-5 bg-slate-50/50 border-2 border-slate-100 rounded-3xl text-lg font-bold text-slate-800 outline-none focus:border-indigo-400 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] transition-all placeholder:font-medium placeholder:text-slate-300"
@@ -307,7 +307,7 @@ export default function AddVocabularyBar({
       {!isOwner && (
          <div className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 text-xs font-bold shadow-sm animate-fade-in">
             <AlertCircle size={16} />
-            Chế độ xem: Bạn không thể thêm từ vào chủ điểm của người khác.
+            Chế độ xem: Bạn không thể thêm từ vào chủ đề của người khác.
          </div>
       )}
     </div>

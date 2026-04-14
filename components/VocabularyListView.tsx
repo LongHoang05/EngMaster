@@ -55,7 +55,7 @@ export default function VocabularyListView({
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 shadow-sm">
-                  Chủ điểm
+                  Chủ đề
                 </span>
                 {vocabularies.length > 0 && (
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm animate-pulse-subtle">
@@ -119,7 +119,7 @@ export default function VocabularyListView({
             {filteredVocab.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-20 text-center text-slate-400 font-medium">
-                  {vocabularies.length === 0 ? "Chưa có từ vựng nào trong chủ điểm này." : "Không tìm thấy từ vựng phù hợp."}
+                  {vocabularies.length === 0 ? "Chưa có từ vựng nào trong chủ đề này." : "Không tìm thấy từ vựng phù hợp."}
                 </td>
               </tr>
             ) : (

@@ -50,7 +50,7 @@ export default function ImportExcelButton({
 
       let totalImported = 0;
 
-      // Lặp qua từng Sheet (mỗi Sheet là 1 chủ điểm/topic)
+      // Lặp qua từng Sheet (mỗi Sheet là 1 chủ đề/topic)
       for (const sheetName of wb.SheetNames) {
         const ws = wb.Sheets[sheetName];
         
@@ -78,7 +78,7 @@ export default function ImportExcelButton({
           continue;
         }
 
-        // TÌM HOẶC TẠO CHỦ ĐIỂM (TOPIC)
+        // TÌM HOẶC TẠO CHỦ ĐỀ (TOPIC)
         // Tìm xem topic này đã có chưa (theo tên topic = tên sheet và user_code hiện tại)
         let topicId = null;
         const { data: existingTopic, error: fetchErr } = await supabase

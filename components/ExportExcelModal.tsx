@@ -29,7 +29,7 @@ export default function ExportExcelModal({
     (acc, topic) => {
       const cat =
         topic.category_name ||
-        (topic.user_code === userCode ? "Từ vựng cá nhân" : "Chủ điểm hệ thống");
+        (topic.user_code === userCode ? "Từ vựng cá nhân" : "Chủ đề hệ thống");
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(topic);
       return acc;
@@ -111,7 +111,7 @@ export default function ExportExcelModal({
               Xuất Excel Từ Vựng
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Chọn danh mục hoặc chủ điểm bạn muốn xuất ra Excel
+              Chọn danh mục hoặc chủ đề bạn muốn xuất ra Excel
             </p>
           </div>
           <button
@@ -141,7 +141,7 @@ export default function ExportExcelModal({
                 <Square size={20} className="text-slate-300 shrink-0" />
               )}
             <div className="flex-1 font-bold text-slate-700">
-              Toàn bộ từ vựng ({topics.length} chủ điểm)
+              Toàn bộ từ vựng ({topics.length} chủ đề)
             </div>
           </div>
 
@@ -215,7 +215,7 @@ export default function ExportExcelModal({
 
         <div className="p-6 border-t border-slate-100 gap-4 flex bg-slate-50/50 items-center justify-between">
           <div className="text-sm font-semibold text-slate-500">
-            Đã chọn: <span className="text-emerald-600 font-black">{selectedTopicIds.size}</span> chủ điểm
+            Đã chọn: <span className="text-emerald-600 font-black">{selectedTopicIds.size}</span> chủ đề
           </div>
           <div className="flex gap-3">
             <button

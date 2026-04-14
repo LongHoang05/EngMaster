@@ -55,13 +55,14 @@ export async function GET(request: Request) {
     const ipa = targetVocab.ipa || "";
     const correctMeaning = Array.isArray(targetVocab.meanings) ? targetVocab.meanings[0] : targetVocab.meanings;
 
-    // Create 2 choices
+    // Create 2 choices with unique IDs to prevent collisions
     const choices = vocabs.map((v, index) => {
       let text = Array.isArray(v.meanings) ? v.meanings[0] : v.meanings;
       if (text.length > 20) text = text.substring(0, 17) + "...";
       
       return {
-        id: `choice_${index}`,
+        // Use word prefix to ensure ID is unique even if multiple notifications are active
+        id: `choice_${word.replace(/\s+/g, "_")}_${index}`,
         text: text,
         isCorrect: index === 0
       };

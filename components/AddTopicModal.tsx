@@ -38,7 +38,7 @@ export default function AddTopicModal({
 
       if (error) throw error;
 
-      toast.success("Đã tạo chủ điểm mới!");
+      toast.success("Đã tạo chủ đề mới!");
       setNewTopicName("");
       setCategoryName("");
       onSuccess();
@@ -58,7 +58,7 @@ export default function AddTopicModal({
              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
                 <Layout size={20} />
              </div>
-             <h3 className="text-lg font-black text-slate-800 tracking-tight">Thêm chủ điểm mới</h3>
+             <h3 className="text-lg font-black text-slate-800 tracking-tight">Thêm chủ đề mới</h3>
           </div>
           <button
             onClick={onClose}
@@ -71,7 +71,7 @@ export default function AddTopicModal({
         <form onSubmit={handleCreateTopic} className="p-8">
           <div className="mb-8">
             <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-              Tên chủ điểm từ vựng
+              Tên chủ đề từ vựng
             </label>
             <input
               autoFocus
@@ -113,7 +113,7 @@ export default function AddTopicModal({
                 <Loader2 size={20} className="animate-spin" />
               ) : (
                 <>
-                  <Plus size={20} /> Tạo chủ điểm
+                  <Plus size={20} /> Tạo chủ đề
                 </>
               )}
             </button>

@@ -37,7 +37,7 @@ export default function TopicListView({
     (acc, topic) => {
       const cat =
         topic.category_name ||
-        (topic.user_code === userCode ? "Từ vựng cá nhân" : "Chủ điểm hệ thống");
+        (topic.user_code === userCode ? "Từ vựng cá nhân" : "Chủ đề hệ thống");
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(topic);
       return acc;
@@ -63,7 +63,7 @@ export default function TopicListView({
       <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <BookOpen className="text-indigo-500" size={24} /> Danh sách chủ điểm
+            <BookOpen className="text-indigo-500" size={24} /> Danh sách chủ đề
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             {topics.length} bảng từ vựng đã lưu
@@ -87,7 +87,7 @@ export default function TopicListView({
               onClick={() => setIsAddTopicModalOpen(true)}
               className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-indigo-200 whitespace-nowrap"
             >
-              <Plus size={16} /> Thêm chủ điểm
+              <Plus size={16} /> Thêm chủ đề
             </button>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default function TopicListView({
 
               {groupedTopics[catName].length === 0 ? (
                 <div className="py-6 text-center text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-200 italic font-medium">
-                  Chưa có chủ điểm nào.
+                  Chưa có chủ đề nào.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -2,22 +2,30 @@ importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
 // Background click listener for Quiz results
 self.addEventListener("notificationclick", (event) => {
-  // 1. DIMISS NOTIFICATION IMMEDIATELY (Critical for Android)
-  event.notification.close();
-
   const actionId = event.action;
   const notification = event.notification;
   
-  // Robust data extraction for both Desktop and Mobile
+  // 1. EXTRACT DATA BEFORE CLOSING (Ensures data is available in all browsers)
   const rawData = notification.data;
-  const data = (rawData && rawData.additionalData) ? rawData.additionalData : rawData;
+  // Handle both possible OneSignal data structures (v16 flattens some payloads)
+  let data = rawData;
+  if (rawData && rawData.additionalData && typeof rawData.additionalData === "object") {
+    data = rawData.additionalData;
+  }
 
+  // 2. DISMISS NOTIFICATION
+  notification.close();
+
+  // 3. PROCESS QUIZ RESULTS
+  // We ensure actionId is present (clicking a button) and data.type is "quiz"
   if (actionId && data && data.type === "quiz") {
     let title = "";
     let body = "";
     
-    // Check answer
-    if (actionId === data.correct_id) {
+    // Use robust string comparison to avoid issues with hidden spaces or casing
+    const isCorrect = String(actionId).trim().toLowerCase() === String(data.correct_id).trim().toLowerCase();
+
+    if (isCorrect) {
       title = "✅ CHÍNH XÁC!";
       body = `"${data.word}" chính là: ${data.correct_meaning}. Giỏi lắm! 🎉`;
     } else {

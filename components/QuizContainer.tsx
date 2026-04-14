@@ -84,7 +84,7 @@ export default function QuizContainer({
       if (error) throw error;
       const words = data || [];
       if (words.length === 0) {
-        toast.error("Các chủ điểm đã chọn chưa có từ vựng nào!");
+        toast.error("Các chủ đề đã chọn chưa có từ vựng nào!");
         setIsLoadingWords(false);
         return;
       }
@@ -116,7 +116,8 @@ export default function QuizContainer({
       if (questionCount >= 9999) {
         sourceWords = [...remaining].sort(() => 0.5 - Math.random());
       } else {
-        sourceWords = [...remaining].slice(0, questionCount);
+        // Pick the next sequential words but shuffle them internally
+        sourceWords = [...remaining].slice(0, questionCount).sort(() => 0.5 - Math.random());
       }
       
       sourceWords.forEach(w => currentTestedIds.add(w.id));
@@ -275,7 +276,7 @@ export default function QuizContainer({
 
         {topics.length === 0 ? (
           <p className="text-slate-400 py-8 italic">
-            Bạn chưa có chủ điểm nào. Hãy tạo và thêm từ vựng trước.
+            Bạn chưa có chủ đề nào. Hãy tạo và thêm từ vựng trước.
           </p>
         ) : (
           <>
@@ -286,7 +287,7 @@ export default function QuizContainer({
                 topic.category_name ||
                 (topic.user_code === userCode
                   ? "Từ vựng cá nhân"
-                  : "Chủ điểm hệ thống");
+                  : "Chủ đề hệ thống");
               if (!acc[cat]) acc[cat] = [];
               acc[cat].push(topic);
               return acc;
@@ -329,7 +330,7 @@ export default function QuizContainer({
                     {expanded && (
                       <div className="px-5 py-4 flex flex-wrap gap-2">
                         {topicsInCategory.length === 0 ? (
-                          <div className="text-sm italic text-slate-400">Chưa có chủ điểm nào</div>
+                          <div className="text-sm italic text-slate-400">Chưa có chủ đề nào</div>
                         ) : (
                           topicsInCategory.map((topic) => {
                             const isSel = selectedTopics.includes(topic.id);
