@@ -37,6 +37,7 @@ import AddTopicModal from "@/components/AddTopicModal";
 import EditVocabularyModal from "@/components/EditVocabularyModal";
 import AddVocabularyBar from "@/components/AddVocabularyBar";
 import ExportExcelModal from "@/components/ExportExcelModal";
+import StreakCelebration from "@/components/StreakCelebration";
 
 export default function EngMaster() {
   const [userCode, setUserCode] = useState<string | null>(null);
@@ -64,6 +65,10 @@ export default function EngMaster() {
   const [viewMode, setViewMode] = useState<"list" | "flashcards">("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  
+  // Streak Celebration State
+  const [isStreakCelebrationOpen, setIsStreakCelebrationOpen] = useState(false);
+  const [celebrationStreakCount, setCelebrationStreakCount] = useState(0);
 
   // User Profile
   const [displayName, setDisplayName] = useState("Học giả bí ẩn");
@@ -300,9 +305,13 @@ export default function EngMaster() {
         if (updateErr) throw updateErr;
       }
 
+      if (lastActive !== todayStr) {
+        setCelebrationStreakCount(newStreak);
+        setIsStreakCelebrationOpen(true);
+      }
+      
       setCurrentStreak(newStreak);
       setHasStudiedToday(true);
-      toast.success("Đã ghi nhận quá trình học tập hôm nay!");
     } catch (e) {
       console.error("Streak sync error", e);
     }
@@ -564,6 +573,12 @@ export default function EngMaster() {
           if (selectedTopic) fetchVocabularies(selectedTopic.id);
           fetchTopics();
         }}
+      />
+
+      <StreakCelebration
+        isOpen={isStreakCelebrationOpen}
+        onClose={() => setIsStreakCelebrationOpen(false)}
+        streakCount={celebrationStreakCount}
       />
 
       {/* Logout Confirmation Modal */}
