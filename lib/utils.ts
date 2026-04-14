@@ -33,7 +33,7 @@ export const playSuccessSound = () => {
       osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1); // A6
 
       gainNode.gain.setValueAtTime(0, t);
-      gainNode.gain.linearRampToValueAtTime(0.3, t + 0.05); // Volume
+      gainNode.gain.linearRampToValueAtTime(0.7, t + 0.05); // Volume
       gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
 
       osc.connect(gainNode);
@@ -68,7 +68,7 @@ export const playFailSound = () => {
       osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
 
       gainNode.gain.setValueAtTime(0, t);
-      gainNode.gain.linearRampToValueAtTime(0.3, t + 0.02);
+      gainNode.gain.linearRampToValueAtTime(0.7, t + 0.02);
       gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
 
       osc.connect(gainNode);
