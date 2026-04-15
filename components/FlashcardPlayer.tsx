@@ -132,130 +132,136 @@ export default function FlashcardPlayer({
         <div className="absolute inset-x-4 md:inset-x-6 top-3 bottom-0 bg-white rounded-[3rem] border border-slate-100 shadow-sm opacity-60 scale-95 translate-y-2 origin-bottom pointer-events-none z-[1]" />
 
         <AnimatePresence mode="wait" custom={exitDirection}>
-          <motion.div
-            key={currentWord.id}
-            custom={exitDirection}
-            style={{ x, rotate, scale }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={1}
-            onDragEnd={handleDragEnd}
-            className="absolute inset-0 cursor-grab active:cursor-grabbing z-10 w-full h-full"
-            whileTap={{ scale: 0.98 }}
-            variants={{
-              initial: { x: 0, y: 50, opacity: 0, scale: 0.9 },
-              animate: { x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 },
-              exit: (direction: number) => ({
-                x: direction === 1 ? 300 : -300,
-                opacity: 0,
-                rotate: direction === 1 ? 10 : -10,
-              }),
-            }}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          >
             <motion.div
-              className="relative w-full h-full"
-              initial={false}
-              animate={{ rotateY: isFlipped ? 180 : 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 100 }}
-              style={{
-                transformStyle: "preserve-3d",
+              key={currentWord.id}
+              custom={exitDirection}
+              style={{ x, rotate, scale }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.5}
+              onDragEnd={handleDragEnd}
+              dragDirectionLock
+              dragListener={!isFlipped} // Only allow drag when NOT flipped? No, user might want to swipe when flipped.
+              className="absolute inset-0 cursor-grab active:cursor-grabbing z-10 w-full h-full"
+              whileTap={{ scale: 0.98 }}
+              variants={{
+                initial: { x: 0, y: 50, opacity: 0, scale: 0.9 },
+                animate: { x: 0, y: 0, opacity: 1, scale: 1, rotate: 0 },
+                exit: (direction: number) => ({
+                  x: direction === 1 ? 300 : -300,
+                  opacity: 0,
+                  rotate: direction === 1 ? 10 : -10,
+                }),
               }}
-              onTap={() => setIsFlipped(!isFlipped)}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
             >
-              {/* MẶT TRƯỚC */}
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded-[3rem] border-2 border-slate-100 text-center shadow-2xl shadow-indigo-100/30"
+              <motion.div
+                className="relative w-full h-full"
+                initial={false}
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ type: "spring", damping: 20, stiffness: 100 }}
                 style={{
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                  zIndex: isFlipped ? 0 : 1,
+                  transformStyle: "preserve-3d",
                 }}
+                onTap={() => setIsFlipped(!isFlipped)}
               >
-                <div className="absolute top-0 left-0 right-0 h-2.5 bg-indigo-500/10 rounded-t-[3rem]" />
-                <div className="absolute inset-0 p-6 md:p-10 z-10 w-full flex flex-col items-center justify-center gap-6">
-                  <div className="space-y-4 w-full px-2 max-w-[90%]">
-                    <h2
-                      className="text-4xl md:text-5xl font-black text-slate-800 tracking-tighter leading-tight break-keep"
-                      style={{ wordBreak: "keep-all", overflowWrap: "normal" }}
-                    >
-                      {currentWord.word}
-                    </h2>
-                    {currentWord.ipa && (
-                      <p className="text-lg md:text-xl text-indigo-400 font-mono font-bold tracking-widest bg-indigo-50 px-6 py-2 rounded-2xl border border-indigo-100/50 inline-block shadow-sm">
-                        {currentWord.ipa}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <motion.button
-                    onTap={(e) => {
-                      e.stopPropagation();
-                      playAudio(currentWord.word);
-                    }}
-                    className="p-5 md:p-6 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all hover:scale-110 shadow-2xl shadow-indigo-200 active:scale-95 group mt-2"
-                  >
-                    <Volume2 size={32} className="group-hover:animate-pulse" />
-                  </motion.button>
-                </div>
-                <div className="absolute bottom-8 left-0 right-0 z-10 w-full flex flex-col gap-2 pointer-events-none opacity-40 items-center">
-                  <div className="flex items-center gap-3">
-                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse" />
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                        Chạm để lật thẻ
-                     </p>
-                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse" />
-                  </div>
-                </div>
-              </div>
-
-              {/* MẶT SAU */}
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-indigo-600 rounded-[3rem] p-8 md:p-12 text-center text-white overflow-y-auto hide-scroll shadow-inner border-2 border-indigo-400/30"
-                style={{
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                  transform: "rotateY(180deg)",
-                  zIndex: isFlipped ? 1 : 0,
-                }}
-              >
-                 <div className="absolute top-0 left-0 right-0 h-2.5 bg-white/20 rounded-t-[3rem]" />
-                <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full space-y-8 max-w-[95%]">
-                  <div className="space-y-4 w-full">
-                    <p className="text-[10px] sm:text-xs font-black text-indigo-200 uppercase tracking-[0.4em]">Định nghĩa</p>
-                    <h2
-                      className="text-2xl sm:text-3xl md:text-4xl font-semibold leading-relaxed tracking-wide w-full px-2"
-                      style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}
-                    >
-                      {Array.isArray(currentWord.meanings) ? currentWord.meanings[0] : currentWord.meanings}
-                    </h2>
-                  </div>
-
-                  <div className="opacity-100 flex flex-row items-center justify-between gap-4 bg-white/10 backdrop-blur-2xl p-4 sm:p-6 rounded-[2rem] w-full max-w-xl border border-white/20 shadow-2xl">
-                    <div className="space-y-1 text-left min-w-0 pr-4">
-                       <p className="text-xl sm:text-2xl font-black tracking-tighter truncate">{currentWord.word}</p>
-                       {currentWord.ipa && (
-                        <p className="font-mono text-indigo-100 text-xs sm:text-sm font-bold opacity-80 truncate">
+                {/* MẶT TRƯỚC */}
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-white rounded-[3rem] border-2 border-slate-100 text-center shadow-2xl shadow-indigo-100/30"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    zIndex: isFlipped ? 0 : 1,
+                    pointerEvents: isFlipped ? "none" : "auto",
+                    opacity: isFlipped ? 0 : 1,
+                  }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-2.5 bg-indigo-500/10 rounded-t-[3rem]" />
+                  <div className="absolute inset-0 p-6 md:p-10 z-10 w-full flex flex-col items-center justify-center gap-6">
+                    <div className="space-y-4 w-full px-2 max-w-[90%]">
+                      <h2
+                        className="text-4xl md:text-5xl font-black text-slate-800 tracking-tighter leading-tight break-keep"
+                        style={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                      >
+                        {currentWord.word}
+                      </h2>
+                      {currentWord.ipa && (
+                        <p className="text-lg md:text-xl text-indigo-400 font-mono font-bold tracking-widest bg-indigo-50 px-6 py-2 rounded-2xl border border-indigo-100/50 inline-block shadow-sm">
                           {currentWord.ipa}
                         </p>
                       )}
                     </div>
+                    
                     <motion.button
                       onTap={(e) => {
                         e.stopPropagation();
                         playAudio(currentWord.word);
                       }}
-                      className="shrink-0 p-3 sm:p-4 text-indigo-600 bg-white hover:bg-slate-50 hover:scale-110 active:scale-95 rounded-full transition-all shadow-2xl"
+                      className="p-5 md:p-6 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all hover:scale-110 shadow-2xl shadow-indigo-200 active:scale-95 group mt-2"
                     >
-                      <Volume2 size={24} />
+                      <Volume2 size={32} className="group-hover:animate-pulse" />
                     </motion.button>
                   </div>
+                  <div className="absolute bottom-8 left-0 right-0 z-10 w-full flex flex-col gap-2 pointer-events-none opacity-40 items-center">
+                    <div className="flex items-center gap-3">
+                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse" />
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                          Chạm để lật thẻ
+                       </p>
+                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+
+                {/* MẶT SAU */}
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-indigo-600 rounded-[3rem] p-8 md:p-12 text-center text-white overflow-y-auto hide-scroll shadow-inner border-2 border-indigo-400/30"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    zIndex: isFlipped ? 1 : 0,
+                    pointerEvents: isFlipped ? "auto" : "none",
+                    opacity: isFlipped ? 1 : 0,
+                  }}
+                >
+                   <div className="absolute top-0 left-0 right-0 h-2.5 bg-white/20 rounded-t-[3rem]" />
+                  <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full space-y-8 max-w-[95%]">
+                    <div className="space-y-4 w-full">
+                      <p className="text-[10px] sm:text-xs font-black text-indigo-200 uppercase tracking-[0.4em]">Định nghĩa</p>
+                      <h2
+                        className="text-2xl sm:text-3xl md:text-4xl font-semibold leading-relaxed tracking-wide w-full px-2"
+                        style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}
+                      >
+                        {Array.isArray(currentWord.meanings) ? currentWord.meanings[0] : currentWord.meanings}
+                      </h2>
+                    </div>
+
+                    <div className="opacity-100 flex flex-row items-center justify-between gap-4 bg-white/10 backdrop-blur-2xl p-4 sm:p-6 rounded-[2rem] w-full max-w-xl border border-white/20 shadow-2xl">
+                      <div className="space-y-1 text-left min-w-0 pr-4">
+                         <p className="text-xl sm:text-2xl font-black tracking-tighter truncate">{currentWord.word}</p>
+                         {currentWord.ipa && (
+                          <p className="font-mono text-indigo-100 text-xs sm:text-sm font-bold opacity-80 truncate">
+                            {currentWord.ipa}
+                          </p>
+                        )}
+                      </div>
+                      <motion.button
+                        onTap={(e) => {
+                          e.stopPropagation();
+                          playAudio(currentWord.word);
+                        }}
+                        className="shrink-0 p-3 sm:p-4 text-indigo-600 bg-white hover:bg-slate-50 hover:scale-110 active:scale-95 rounded-full transition-all shadow-2xl"
+                      >
+                        <Volume2 size={24} />
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
 
             {/* Top-level Overlay for Swipe Activity */}
             <motion.div
