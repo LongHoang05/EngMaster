@@ -166,11 +166,12 @@ export default function FlashcardPlayer({
                 style={{
                   transformStyle: "preserve-3d",
                 }}
-                onTap={(e, info) => {
-                  // Prevent flipping if user clicked a button (like the speaker)
+                onTap={(e) => {
                   const target = e.target as HTMLElement;
-                  if (target.closest('button')) return;
-                  
+                  // If clicking a button or something inside a button, do not flip
+                  if (target.closest('button') || target.tagName === 'BUTTON') {
+                    return;
+                  }
                   setIsFlipped(!isFlipped);
                 }}
               >
@@ -202,11 +203,12 @@ export default function FlashcardPlayer({
                     </div>
                     
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         playAudio(currentWord.word);
                       }}
-                      className="p-5 md:p-6 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all hover:scale-110 shadow-2xl shadow-indigo-200 active:scale-95 group mt-2 relative z-20"
+                      className="p-5 md:p-6 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all hover:scale-110 shadow-2xl shadow-indigo-200 active:scale-95 group mt-2 relative z-50"
                     >
                       <Volume2 size={32} className="group-hover:animate-pulse" />
                     </button>
@@ -256,11 +258,12 @@ export default function FlashcardPlayer({
                         )}
                       </div>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           playAudio(currentWord.word);
                         }}
-                        className="shrink-0 p-3 sm:p-4 text-indigo-600 bg-white hover:bg-slate-50 hover:scale-110 active:scale-95 rounded-full transition-all shadow-2xl relative z-20"
+                        className="shrink-0 p-3 sm:p-4 text-indigo-600 bg-white hover:bg-slate-50 hover:scale-110 active:scale-95 rounded-full transition-all shadow-2xl relative z-50"
                       >
                         <Volume2 size={24} />
                       </button>
