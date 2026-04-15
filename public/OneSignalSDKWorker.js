@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// Version 8.0 - Iconic Separation (L/R)
+// Version 9.0 - Index Trap & Action Logging
 self.addEventListener("notificationclick", (event) => {
   const actionId = String(event.action || ""); 
   const notification = event.notification;
@@ -14,21 +14,22 @@ self.addEventListener("notificationclick", (event) => {
   const correctSide = String(data.correct_side || "");
   let isCorrect = false;
 
-  // 1. SIMPLE L/R MATCHING
-  if (actionId === "L" && correctSide === "L") {
-    isCorrect = true;
-  } else if (actionId === "R" && correctSide === "R") {
-    isCorrect = true;
-  }
+  // 1. SIMPLE MATCHING
+  if (actionId === "L" && correctSide === "L") isCorrect = true;
+  if (actionId === "R" && correctSide === "R") isCorrect = true;
 
-  // 2. SHOW RESULT WITH VERSION STAMP
-  const version = "[v8]";
+  // 2. LOGGING FOR DEBUGGING
+  const actions = notification.actions || [];
+  const actionListString = actions.map(a => a.action).join(", ");
+
+  // 3. SHOW RESULT
+  const version = "[v9]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  const footer = `\n(Side: ${actionId})`;
+  const footer = `\n(ID: ${actionId})\n(All: ${actionListString})`;
 
   event.waitUntil(
     self.registration.showNotification(title, {

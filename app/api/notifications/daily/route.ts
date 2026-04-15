@@ -65,22 +65,27 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v8]", vi: "🧠 Thử thách [v8]" },
+        headings: { en: "🧠 Thử thách [v9]", vi: "🧠 Thử thách [v9]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
         web_buttons: [
           {
+            id: "GAP",
+            text: "---",
+            url: appUrl + "&a=gap&v=9"
+          },
+          {
             id: "L",
             text: shuffledChoices[0].text,
-            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524456.png", // Blue dot
-            url: appUrl + "&a=left&v=8"
+            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524456.png",
+            url: appUrl + "&a=left&v=9"
           },
           {
             id: "R",
             text: shuffledChoices[1].text,
-            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524440.png", // Green dot
-            url: appUrl + "&a=right&v=8"
+            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524440.png",
+            url: appUrl + "&a=right&v=9"
           }
         ],
         data: {
@@ -88,17 +93,17 @@ export async function POST(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_side: correctSide,
-          v: 8
+          v: 9
         },
         ttl: 7200,
       }),
     });
 
     const result = await response.json();
-    return NextResponse.json({ success: response.ok, message: `Quiz [v8] sent: "${word}"`, details: result });
+    return NextResponse.json({ success: response.ok, message: `Quiz [v9] sent: "${word}"`, details: result });
 
   } catch (error: any) {
-    console.error("Critical error in [v8] notification:", error);
+    console.error("Critical error in [v9] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
