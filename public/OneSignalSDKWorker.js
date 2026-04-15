@@ -12,53 +12,34 @@ self.addEventListener("notificationclick", (event) => {
 
   const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
   let isCorrect = false;
-  let detectedTitle = "";
-  let finalMethod = "Direct";
 
-  if (actionId) {
-    const actions = notification.actions || [];
-    const clickedIdx = actions.findIndex(a => a.action === actionId);
-    
-    if (clickedIdx !== -1) {
-      detectedTitle = actions[clickedIdx].title.trim().toLowerCase();
-      const cleanTitle = detectedTitle.replace(/\.\.\.$/, "");
-
-      // 1. Kiểm tra trực tiếp
-      if (correctMeaning.startsWith(cleanTitle) || cleanTitle.startsWith(correctMeaning)) {
+  // 1. EXACT TITLE MATCHING (The only reliable way)
+  if (actionId && notification.actions) {
+    const clickedAction = notification.actions.find(a => a.action === actionId);
+    if (clickedAction && clickedAction.title) {
+      const clickedTitle = clickedAction.title.trim().toLowerCase().replace(/\.\.\.$/, "");
+      
+      // Compare clicked title with correct meaning
+      if (correctMeaning.startsWith(clickedTitle) || clickedTitle.startsWith(correctMeaning)) {
         isCorrect = true;
-      } 
-      // 2. Logic BÙ TRỪ cho Android (Fuzzy Matching)
-      // Nếu nút hiện tại sai, kiểm tra xem nút NGAY TRƯỚC ĐÓ có đúng không
-      // Vì Android thường báo lệch từ vị trí N (thực tế) sang N+1 (báo cáo)
-      else if (/Android/i.test(navigator.userAgent) && clickedIdx > 0) {
-        const prevAction = actions[clickedIdx - 1];
-        const prevTitle = prevAction.title.trim().toLowerCase().replace(/\.\.\.$/, "");
-        
-        if (correctMeaning.startsWith(prevTitle) || prevTitle.startsWith(correctMeaning)) {
-          isCorrect = true;
-          finalMethod = "Android-Compensated";
-        }
       }
-    }
-
-    // Fallback cuối cùng cho máy tính (Desktop)
-    if (!isCorrect && (actionId === "idx_0" || actionId === "btn:" + data.correct_meaning)) {
-      isCorrect = true;
-      finalMethod = "ID-Fallback";
     }
   }
 
+  // Fallback for ID matching (if titles are missing/weird)
+  if (!isCorrect && actionId === "btn:" + data.correct_meaning) {
+    isCorrect = true;
+  }
+
+  // 2. SHOW RESULT
   const title = isCorrect ? "✅ CHÍNH XÁC!" : "❌ SAI RỒI!";
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  // Debug ẩn (để tôi theo dõi)
-  const debug = `\n[Method: ${finalMethod} | ClickedID: ${actionId} | Title: "${detectedTitle}"]`;
-
   event.waitUntil(
     self.registration.showNotification(title, {
-      body: body + debug,
+      body: body,
       icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
       tag: "quiz-result",
       renotify: true
