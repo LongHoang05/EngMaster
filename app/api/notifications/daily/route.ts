@@ -100,8 +100,11 @@ export async function GET(request: Request) {
         data: {
           type: "quiz",
           correct_id: correctChoiceId,
+          correct_index: shuffledChoices.findIndex(c => c.isCorrect),
           word: word,
-          correct_meaning: correctMeaning
+          correct_meaning: correctMeaning,
+          // Store all choice IDs so SW can match by index
+          choice_ids: shuffledChoices.map(c => c.id)
         },
         ttl: 7200,
       }),

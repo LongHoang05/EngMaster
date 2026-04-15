@@ -65,7 +65,7 @@ export default function EngMaster() {
   const [viewMode, setViewMode] = useState<"list" | "flashcards">("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  
+
   // Streak Celebration State
   const [isStreakCelebrationOpen, setIsStreakCelebrationOpen] = useState(false);
   const [celebrationStreakCount, setCelebrationStreakCount] = useState(0);
@@ -85,6 +85,7 @@ export default function EngMaster() {
     }
     setIsAuthLoading(false);
   }, []);
+
 
   const handleLoginSuccess = (code: string) => {
     localStorage.setItem("eng_master_user_code", code);
@@ -115,14 +116,14 @@ export default function EngMaster() {
       if (data) {
         setCurrentStreak(data.current_streak || 0);
         setDisplayName(data.display_name || "Học giả bí ẩn");
-        
+
         if (data.last_active_date) {
-            setHasStudiedToday(
-              new Date(data.last_active_date).toLocaleDateString("en-CA") ===
-                new Date().toLocaleDateString("en-CA")
-            );
+          setHasStudiedToday(
+            new Date(data.last_active_date).toLocaleDateString("en-CA") ===
+              new Date().toLocaleDateString("en-CA"),
+          );
         } else {
-            setHasStudiedToday(false);
+          setHasStudiedToday(false);
         }
       } else {
         // Create user record if not exists
@@ -309,7 +310,7 @@ export default function EngMaster() {
         setCelebrationStreakCount(newStreak);
         setIsStreakCelebrationOpen(true);
       }
-      
+
       setCurrentStreak(newStreak);
       setHasStudiedToday(true);
     } catch (e) {
@@ -353,7 +354,10 @@ export default function EngMaster() {
   };
 
   // 5. EXCEL LOGIC
-  const handleExportExcel = async (topicsToExport: Topic[], filename: string) => {
+  const handleExportExcel = async (
+    topicsToExport: Topic[],
+    filename: string,
+  ) => {
     if (topicsToExport.length === 0) {
       toast.error("Không có chủ đề nào để xuất.");
       return;
@@ -375,7 +379,9 @@ export default function EngMaster() {
         if (!vocabs || vocabs.length === 0) continue;
 
         const sheetData = vocabs.map((v) => {
-          const meaningsStr = Array.isArray(v.meanings) ? v.meanings.join(", ") : (v.meanings || "");
+          const meaningsStr = Array.isArray(v.meanings)
+            ? v.meanings.join(", ")
+            : v.meanings || "";
           return {
             "Từ vựng": v.word || "",
             "Phiên âm": v.ipa || "",
@@ -391,7 +397,8 @@ export default function EngMaster() {
         ];
 
         // Sheet name max 31 chars (Excel limit), remove invalid chars
-        const safeName = topic.name.replace(/[:\\/?*\[\]]/g, "").slice(0, 31) || "Sheet";
+        const safeName =
+          topic.name.replace(/[:\\/?*\[\]]/g, "").slice(0, 31) || "Sheet";
         XLSX.utils.book_append_sheet(wb, ws, safeName);
         totalWords += sheetData.length;
       }
@@ -403,7 +410,9 @@ export default function EngMaster() {
       }
 
       XLSX.writeFile(wb, `${filename}.xlsx`);
-      toast.success(`Xuất thành công ${totalWords} từ vựng (${wb.SheetNames.length} sheet)!`);
+      toast.success(
+        `Xuất thành công ${totalWords} từ vựng (${wb.SheetNames.length} sheet)!`,
+      );
       setIsExportExcelModalOpen(false);
     } catch (err) {
       const error = err as Error;
@@ -428,7 +437,9 @@ export default function EngMaster() {
             <GraduationCap className="w-5 h-5 md:w-7 md:h-7" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800 leading-tight">EngMaster</h1>
+            <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800 leading-tight">
+              EngMaster
+            </h1>
           </div>
         </div>
 
@@ -445,7 +456,7 @@ export default function EngMaster() {
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
-              className={`flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${
+              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${
                 activeTab === tab.id
                   ? "bg-white text-indigo-600 shadow-[0_4px_12px_rgba(79,70,229,0.12)] border border-slate-100 scale-105"
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
