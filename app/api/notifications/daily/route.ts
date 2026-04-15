@@ -54,7 +54,8 @@ export async function POST(req: Request) {
     const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
     const correctSide = correctDisplayIndex === 0 ? "L" : "R";
 
-    const appUrl = `https://study-engmaster.vercel.app/?word=${encodeURIComponent(word)}`;
+    // IMPORTANT: Empty URL to prevent Chrome from adding 'Unsubscribe' button and shifting indices
+    const emptyUrl = "";
 
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
@@ -65,27 +66,20 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v9]", vi: "🧠 Thử thách [v9]" },
+        headings: { en: "🧠 Thử thách [v10]", vi: "🧠 Thử thách [v10]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: appUrl,
+        url: emptyUrl, 
         web_buttons: [
-          {
-            id: "GAP",
-            text: "---",
-            url: appUrl + "&a=gap&v=9"
-          },
           {
             id: "L",
             text: shuffledChoices[0].text,
-            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524456.png",
-            url: appUrl + "&a=left&v=9"
+            url: emptyUrl 
           },
           {
             id: "R",
             text: shuffledChoices[1].text,
-            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524440.png",
-            url: appUrl + "&a=right&v=9"
+            url: emptyUrl
           }
         ],
         data: {
@@ -93,17 +87,17 @@ export async function POST(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_side: correctSide,
-          v: 9
+          v: 10
         },
         ttl: 7200,
       }),
     });
 
     const result = await response.json();
-    return NextResponse.json({ success: response.ok, message: `Quiz [v9] sent: "${word}"`, details: result });
+    return NextResponse.json({ success: response.ok, message: `Quiz [v10] sent: "${word}"`, details: result });
 
   } catch (error: any) {
-    console.error("Critical error in [v9] notification:", error);
+    console.error("Critical error in [v10] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// Version 9.0 - Index Trap & Action Logging
+// Version 10.0 - No-URL Strategy
 self.addEventListener("notificationclick", (event) => {
   const actionId = String(event.action || ""); 
   const notification = event.notification;
@@ -14,16 +14,16 @@ self.addEventListener("notificationclick", (event) => {
   const correctSide = String(data.correct_side || "");
   let isCorrect = false;
 
-  // 1. SIMPLE MATCHING
+  // 1. SIMPLE L/R MATCHING (Now stable because index offset is fixed)
   if (actionId === "L" && correctSide === "L") isCorrect = true;
   if (actionId === "R" && correctSide === "R") isCorrect = true;
 
-  // 2. LOGGING FOR DEBUGGING
+  // 2. LOGGING FOR FINAL VERIFICATION
   const actions = notification.actions || [];
   const actionListString = actions.map(a => a.action).join(", ");
 
   // 3. SHOW RESULT
-  const version = "[v9]";
+  const version = "[v10]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
