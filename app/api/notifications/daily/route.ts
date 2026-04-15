@@ -52,7 +52,8 @@ export async function POST(req: Request) {
       .sort((a: any, b: any) => a.sort - b.sort);
 
     const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
-    const correctSide = correctDisplayIndex === 0 ? "L" : "R";
+    // 0 -> choice A, 1 -> choice B
+    const correctIdxFlag = correctDisplayIndex; 
 
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
@@ -63,23 +64,18 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v13]", vi: "🧠 Thử thách [v13]" },
+        headings: { en: "🧠 Thử thách [v15]", vi: "🧠 Thử thách [v15]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: "", // No URL to keep browser quiet
+        url: "", // Kill main click opening
         web_buttons: [
           {
-            id: "IGNORE",
-            text: "\u200B", // Invisible zero-width space to take the 'Unsubscribe' hit
-            url: ""
-          },
-          {
-            id: "L",
+            id: "CHOICE_A_v15",
             text: shuffledChoices[0].text,
-            url: ""
+            url: "" 
           },
           {
-            id: "R",
+            id: "CHOICE_B_v15",
             text: shuffledChoices[1].text,
             url: ""
           }
@@ -88,18 +84,18 @@ export async function POST(req: Request) {
           type: "quiz",
           word: word,
           correct_meaning: correctMeaning,
-          correct_side: correctSide,
-          v: 13
+          correct_idx_flag: correctIdxFlag, // The answer is choice 0 or choice 1
+          v: 15
         },
         ttl: 7200,
       }),
     });
 
     const result = await response.json();
-    return NextResponse.json({ success: response.ok, message: `Quiz [v13] sent: "${word}"`, details: result });
+    return NextResponse.json({ success: response.ok, message: `Quiz [v15] sent: "${word}"`, details: result });
 
   } catch (error: any) {
-    console.error("Critical error in [v13] notification:", error);
+    console.error("Critical error in [v15] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
