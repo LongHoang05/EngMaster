@@ -507,6 +507,7 @@ export default function DashboardScreen({
 
                     const res = await fetch(
                       `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
+                      { method: "POST" },
                     );
                     const data = await res.json();
                     if (!data.success) {
