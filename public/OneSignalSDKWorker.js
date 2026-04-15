@@ -1,41 +1,38 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
 self.addEventListener("notificationclick", (event) => {
-  const actionId = event.action;
+  const actionId = event.action; // This will now be the TEXT of the button
   const notification = event.notification;
   const rawData = notification.data;
   notification.close();
 
-  // Handle OneSignal data structure
   let data = rawData;
   if (rawData && rawData.additionalData) data = rawData.additionalData;
   if (!data || data.type !== "quiz") return;
 
-  // The correct_id is now STABLE and always "0"
-  const correctId = "0"; 
+  const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
   let isCorrect = false;
 
   if (actionId) {
-    const clickedId = String(actionId).trim();
+    const clickedText = String(actionId).trim().toLowerCase();
     
-    // 1. Direct match (clicked "0")
-    if (clickedId === correctId) {
+    // 1. Match by exact text (since ID = full text)
+    if (clickedText === correctMeaning) {
       isCorrect = true;
-    }
-    // 2. Index match fallback (if mobile sends "0" or "1" as index)
-    else if (data.correct_index !== undefined && String(data.correct_index) === clickedId) {
+    } 
+    // 2. Match by "Starts with" (handling truncation fallbacks)
+    else if (correctMeaning.startsWith(clickedText) || clickedText.startsWith(correctMeaning)) {
       isCorrect = true;
     }
   }
 
-  // Show result
   const title = isCorrect ? "✅ CHÍNH XÁC!" : "❌ SAI RỒI!";
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. Giỏi lắm! 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. Cố gắng lần sau nhé! 💪`;
 
-  // One last debug line to be absolutely sure - will remove after validation
-  const debug = `\n[Clicked: ${actionId} | CorrectID: ${correctId} | CorrectIdx: ${data.correct_index}]`;
+  // Debug info for the last time
+  const debug = `\n[Clicked: "${actionId}" | Correct: "${data.correct_meaning}"]`;
 
   event.waitUntil(
     self.registration.showNotification(title, {

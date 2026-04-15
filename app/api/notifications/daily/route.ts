@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
         web_buttons: shuffledChoices.map(c => ({
-          id: c.id,
+          id: c.text, // Use the text ITSELF as the ID
           text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
           url: appUrl
         })),
