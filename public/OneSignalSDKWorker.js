@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// Version 6.0 - Dynamic UID Matching
+// Version 7.0 - Absolute Separation (LEFT/RIGHT)
 self.addEventListener("notificationclick", (event) => {
   const actionId = String(event.action || ""); 
   const notification = event.notification;
@@ -11,35 +11,24 @@ self.addEventListener("notificationclick", (event) => {
   if (rawData && rawData.additionalData) data = rawData.additionalData;
   if (!data || data.type !== "quiz") return;
 
-  const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
-  const choices = data.choices || [];
-  const correctId = String(data.correct_id || "");
+  const correctSide = String(data.correct_side || "");
   let isCorrect = false;
 
-  // 1. DYNAMIC UID MATCHING (The most robust method)
-  if (actionId && correctId && actionId === correctId) {
+  // 1. ABSOLUTE SIDE MATCHING
+  if (actionId === "QUIZ_LEFT" && correctSide === "LEFT") {
     isCorrect = true;
-  } else if (actionId) {
-    // Fallback: Check if the actionId corresponds to the correct choice text or index
-    const btnIds = data.button_ids || [];
-    const clickedBtnIdx = btnIds.indexOf(actionId);
-    
-    if (clickedBtnIdx !== -1 && choices[clickedBtnIdx]) {
-      const clickedText = choices[clickedBtnIdx].trim().toLowerCase().replace(/\.\.\.$/, "");
-      if (correctMeaning.startsWith(clickedText) || clickedText.startsWith(correctMeaning)) {
-        isCorrect = true;
-      }
-    }
+  } else if (actionId === "QUIZ_RIGHT" && correctSide === "RIGHT") {
+    isCorrect = true;
   }
 
   // 2. SHOW RESULT WITH VERSION STAMP
-  const version = "[v6]";
+  const version = "[v7]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  const footer = `\n(ID: ${actionId.substring(0, 10)}...)`;
+  const footer = `\n(Side: ${actionId.replace("QUIZ_", "")})`;
 
   event.waitUntil(
     self.registration.showNotification(title, {
