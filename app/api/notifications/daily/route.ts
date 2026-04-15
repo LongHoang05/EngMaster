@@ -54,9 +54,6 @@ export async function POST(req: Request) {
     const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
     const correctSide = correctDisplayIndex === 0 ? "L" : "R";
 
-    // Use a special param to signal "do not open window" and help the SW identify the click
-    const appUrl = `https://study-engmaster.vercel.app/api/noop?word=${encodeURIComponent(word)}&_osp=do_not_open`;
-
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
@@ -66,25 +63,25 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 EngMaster Quiz [v11]", vi: "🧠 EngMaster Quiz [v11]" },
+        headings: { en: "🧠 Thử thách [v13]", vi: "🧠 Thử thách [v13]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: appUrl,
+        url: "", // No URL to keep browser quiet
         web_buttons: [
           {
-            id: "BRAND",
-            text: "EngMaster 🔥",
-            url: appUrl + "&btn=brand"
+            id: "IGNORE",
+            text: "\u200B", // Invisible zero-width space to take the 'Unsubscribe' hit
+            url: ""
           },
           {
             id: "L",
             text: shuffledChoices[0].text,
-            url: appUrl + "&btn=L"
+            url: ""
           },
           {
             id: "R",
             text: shuffledChoices[1].text,
-            url: appUrl + "&btn=R"
+            url: ""
           }
         ],
         data: {
@@ -92,17 +89,17 @@ export async function POST(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_side: correctSide,
-          v: 11
+          v: 13
         },
         ttl: 7200,
       }),
     });
 
     const result = await response.json();
-    return NextResponse.json({ success: response.ok, message: `Quiz [v11] sent: "${word}"`, details: result });
+    return NextResponse.json({ success: response.ok, message: `Quiz [v13] sent: "${word}"`, details: result });
 
   } catch (error: any) {
-    console.error("Critical error in [v11] notification:", error);
+    console.error("Critical error in [v13] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
