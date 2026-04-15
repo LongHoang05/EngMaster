@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// Version 5.0 - Super Compatible & Debug Version
+// Version 6.0 - Dynamic UID Matching
 self.addEventListener("notificationclick", (event) => {
   const actionId = String(event.action || ""); 
   const notification = event.notification;
@@ -12,46 +12,34 @@ self.addEventListener("notificationclick", (event) => {
   if (!data || data.type !== "quiz") return;
 
   const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
-  const choices = data.choices || data.choice_texts || [];
+  const choices = data.choices || [];
+  const correctId = String(data.correct_id || "");
   let isCorrect = false;
-  let matchedText = "";
 
-  // 1. DUAL-MODE MATCHING
-  if (actionId) {
-    // Mode A: Numeric Index (0, 1, 2)
-    const idx = parseInt(actionId, 10);
-    if (!isNaN(idx) && choices[idx]) {
-      matchedText = String(choices[idx]).trim().toLowerCase();
-    } 
-    // Mode B: String ID prefixed with btn:
-    else if (actionId.startsWith("btn:")) {
-      matchedText = actionId.replace("btn:", "").trim().toLowerCase();
-    }
-    // Mode C: Direct Title Matching from the buttons array
-    else if (notification.actions) {
-      const actionObj = notification.actions.find(a => String(a.action) === actionId);
-      if (actionObj && actionObj.title) {
-        matchedText = actionObj.title.trim().toLowerCase();
-      }
-    }
-
-    // Clean match text
-    matchedText = matchedText.replace(/\.\.\.$/, "");
+  // 1. DYNAMIC UID MATCHING (The most robust method)
+  if (actionId && correctId && actionId === correctId) {
+    isCorrect = true;
+  } else if (actionId) {
+    // Fallback: Check if the actionId corresponds to the correct choice text or index
+    const btnIds = data.button_ids || [];
+    const clickedBtnIdx = btnIds.indexOf(actionId);
     
-    if (matchedText && (correctMeaning.startsWith(matchedText) || matchedText.startsWith(correctMeaning))) {
-      isCorrect = true;
+    if (clickedBtnIdx !== -1 && choices[clickedBtnIdx]) {
+      const clickedText = choices[clickedBtnIdx].trim().toLowerCase().replace(/\.\.\.$/, "");
+      if (correctMeaning.startsWith(clickedText) || clickedText.startsWith(correctMeaning)) {
+        isCorrect = true;
+      }
     }
   }
 
   // 2. SHOW RESULT WITH VERSION STAMP
-  const version = "[v5]";
+  const version = "[v6]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  // Final confirmation logic: Show the reported action ID in body for one last check
-  const footer = `\n(ID: ${actionId})`;
+  const footer = `\n(ID: ${actionId.substring(0, 10)}...)`;
 
   event.waitUntil(
     self.registration.showNotification(title, {
