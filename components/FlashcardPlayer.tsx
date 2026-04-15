@@ -164,7 +164,7 @@ export default function FlashcardPlayer({
               style={{
                 transformStyle: "preserve-3d",
               }}
-              onClick={() => setIsFlipped(!isFlipped)}
+              onTap={() => setIsFlipped(!isFlipped)}
             >
               {/* MẶT TRƯỚC */}
               <div
@@ -191,15 +191,15 @@ export default function FlashcardPlayer({
                     )}
                   </div>
                   
-                  <button
-                    onClick={(e) => {
+                  <motion.button
+                    onTap={(e) => {
                       e.stopPropagation();
                       playAudio(currentWord.word);
                     }}
                     className="p-5 md:p-6 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all hover:scale-110 shadow-2xl shadow-indigo-200 active:scale-95 group mt-2"
                   >
                     <Volume2 size={32} className="group-hover:animate-pulse" />
-                  </button>
+                  </motion.button>
                 </div>
                 <div className="absolute bottom-8 left-0 right-0 z-10 w-full flex flex-col gap-2 pointer-events-none opacity-40 items-center">
                   <div className="flex items-center gap-3">
@@ -243,15 +243,15 @@ export default function FlashcardPlayer({
                         </p>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
+                    <motion.button
+                      onTap={(e) => {
                         e.stopPropagation();
                         playAudio(currentWord.word);
                       }}
                       className="shrink-0 p-3 sm:p-4 text-indigo-600 bg-white hover:bg-slate-50 hover:scale-110 active:scale-95 rounded-full transition-all shadow-2xl"
                     >
                       <Volume2 size={24} />
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </div>
