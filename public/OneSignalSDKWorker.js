@@ -11,24 +11,22 @@ self.addEventListener("notificationclick", (event) => {
   if (!data || data.type !== "quiz") return;
 
   const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
+  const choices = data.choices || [];
   let isCorrect = false;
 
-  // 1. EXACT TITLE MATCHING (The only reliable way)
-  if (actionId && notification.actions) {
-    const clickedAction = notification.actions.find(a => a.action === actionId);
-    if (clickedAction && clickedAction.title) {
-      const clickedTitle = clickedAction.title.trim().toLowerCase().replace(/\.\.\.$/, "");
+  // 1. ROBUST MATCHING: Use numeric ID to look up choice from our data payload
+  if (actionId !== undefined && actionId !== null && actionId !== "") {
+    const idx = parseInt(actionId, 10);
+    
+    // Check if the clicked choice text matches the correct meaning
+    if (!isNaN(idx) && choices[idx]) {
+      const clickedText = String(choices[idx]).trim().toLowerCase();
       
-      // Compare clicked title with correct meaning
-      if (correctMeaning.startsWith(clickedTitle) || clickedTitle.startsWith(correctMeaning)) {
+      // Lenient string comparison to handle minor formatting differences
+      if (correctMeaning.startsWith(clickedText) || clickedText.startsWith(correctMeaning)) {
         isCorrect = true;
       }
     }
-  }
-
-  // Fallback for ID matching (if titles are missing/weird)
-  if (!isCorrect && actionId === "btn:" + data.correct_meaning) {
-    isCorrect = true;
   }
 
   // 2. SHOW RESULT

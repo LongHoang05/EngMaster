@@ -79,17 +79,15 @@ export async function GET(request: Request) {
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
         web_buttons: shuffledChoices.map((c, i) => ({
-          id: `btn:${c.text}`, // Prefix with btn: to distinguish from indices
+          id: String(i), // Numeric ID is safest for all OS
           text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
           url: appUrl + "&_osp=do_not_open"
         })),
         data: {
           type: "quiz",
-          correct_id: "0",
-          correct_index: correctDisplayIndex,
           word: word,
           correct_meaning: correctMeaning,
-          choice_texts: shuffledChoices.map(c => c.text)
+          choices: shuffledChoices.map(c => c.text) // Store the actual strings here
         },
         ttl: 7200,
       }),
