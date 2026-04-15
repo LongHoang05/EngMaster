@@ -158,11 +158,13 @@ export default function FlashcardPlayer({
           >
             <motion.div
               className="relative w-full h-full"
+              initial={false}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100 }}
               style={{
                 transformStyle: "preserve-3d",
-                transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
+              onClick={() => setIsFlipped(!isFlipped)}
             >
               {/* MẶT TRƯỚC */}
               <div
@@ -170,8 +172,8 @@ export default function FlashcardPlayer({
                 style={{
                   backfaceVisibility: "hidden",
                   WebkitBackfaceVisibility: "hidden",
+                  zIndex: isFlipped ? 0 : 1,
                 }}
-                onClick={() => !isFlipped && setIsFlipped(true)}
               >
                 <div className="absolute top-0 left-0 right-0 h-2.5 bg-indigo-500/10 rounded-t-[3rem]" />
                 <div className="absolute inset-0 p-6 md:p-10 z-10 w-full flex flex-col items-center justify-center gap-6">
@@ -217,8 +219,8 @@ export default function FlashcardPlayer({
                   backfaceVisibility: "hidden",
                   WebkitBackfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
+                  zIndex: isFlipped ? 1 : 0,
                 }}
-                onClick={() => isFlipped && setIsFlipped(false)}
               >
                  <div className="absolute top-0 left-0 right-0 h-2.5 bg-white/20 rounded-t-[3rem]" />
                 <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full space-y-8 max-w-[95%]">
