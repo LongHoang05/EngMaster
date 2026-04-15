@@ -4,43 +4,57 @@ self.addEventListener("notificationclick", (event) => {
   const actionId = event.action; 
   const notification = event.notification;
   const rawData = notification.data;
-  
-  // 1. Silent Operation: Don't open any window if _osp=do_not_open is in the action URL or logic
-  // Chrome handles the actual opening based on the 'url' property of the action.
-  // OneSignal's _osp=do_not_open should handle prevent opening if supported.
   notification.close();
 
   let data = rawData;
   if (rawData && rawData.additionalData) data = rawData.additionalData;
   if (!data || data.type !== "quiz") return;
 
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  let clickedIndex = -1;
+  const correctMeaning = String(data.correct_meaning).trim().toLowerCase();
+  let isCorrect = false;
+  let detectedTitle = "";
+  let finalMethod = "Direct";
 
-  // 2. Extract index and FIX Android's inverted mapping
-  if (actionId && actionId.startsWith("idx_")) {
-    let rawIndex = parseInt(actionId.split("_")[1], 10);
+  if (actionId) {
+    const actions = notification.actions || [];
+    const clickedIdx = actions.findIndex(a => a.action === actionId);
     
-    if (isAndroid) {
-      // Android Chrome (for 2 buttons) often reports index 1 for Button 1 and index 0 for Button 2
-      // We flip it back to get the real intended index.
-      clickedIndex = (1 - rawIndex);
-    } else {
-      clickedIndex = rawIndex;
+    if (clickedIdx !== -1) {
+      detectedTitle = actions[clickedIdx].title.trim().toLowerCase();
+      const cleanTitle = detectedTitle.replace(/\.\.\.$/, "");
+
+      // 1. Kiểm tra trực tiếp
+      if (correctMeaning.startsWith(cleanTitle) || cleanTitle.startsWith(correctMeaning)) {
+        isCorrect = true;
+      } 
+      // 2. Logic BÙ TRỪ cho Android (Fuzzy Matching)
+      // Nếu nút hiện tại sai, kiểm tra xem nút NGAY TRƯỚC ĐÓ có đúng không
+      // Vì Android thường báo lệch từ vị trí N (thực tế) sang N+1 (báo cáo)
+      else if (/Android/i.test(navigator.userAgent) && clickedIdx > 0) {
+        const prevAction = actions[clickedIdx - 1];
+        const prevTitle = prevAction.title.trim().toLowerCase().replace(/\.\.\.$/, "");
+        
+        if (correctMeaning.startsWith(prevTitle) || prevTitle.startsWith(correctMeaning)) {
+          isCorrect = true;
+          finalMethod = "Android-Compensated";
+        }
+      }
+    }
+
+    // Fallback cuối cùng cho máy tính (Desktop)
+    if (!isCorrect && (actionId === "idx_0" || actionId === "btn:" + data.correct_meaning)) {
+      isCorrect = true;
+      finalMethod = "ID-Fallback";
     }
   }
-
-  // 3. Validate against the data payload
-  // data.correct_index is where the correct answer was placed in the original array
-  const isCorrect = (clickedIndex === data.correct_index);
 
   const title = isCorrect ? "✅ CHÍNH XÁC!" : "❌ SAI RỒI!";
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  // Debug info (hidden at the bottom)
-  const debug = `\n[Device: ${isAndroid ? "Android" : "Other"} | ReportedIdx: ${actionId} | FinalIdx: ${clickedIndex} | CorrectIdx: ${data.correct_index}]`;
+  // Debug ẩn (để tôi theo dõi)
+  const debug = `\n[Method: ${finalMethod} | ClickedID: ${actionId} | Title: "${detectedTitle}"]`;
 
   event.waitUntil(
     self.registration.showNotification(title, {

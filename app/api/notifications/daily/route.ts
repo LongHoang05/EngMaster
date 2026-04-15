@@ -79,9 +79,9 @@ export async function GET(request: Request) {
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
         web_buttons: shuffledChoices.map((c, i) => ({
-          id: `idx_${i}`, // Explicit index ID
+          id: `btn:${c.text}`, // Prefix with btn: to distinguish from indices
           text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
-          url: appUrl + "&_osp=do_not_open" // Force no-open
+          url: appUrl + "&_osp=do_not_open"
         })),
         data: {
           type: "quiz",
