@@ -473,10 +473,10 @@ export default function DashboardScreen({
               </h3>
               <p className="text-sm text-indigo-100/80 mt-1 max-w-md">
                 {notifStatus === "subscribed"
-                  ? "Bạn sẽ nhận câu hỏi từ vựng mỗi 2 tiếng. Học mọi lúc mọi nơi!"
+                  ? "Bạn sẽ nhận câu hỏi từ vựng mỗi 1 tiếng. Học mọi lúc mọi nơi!"
                   : notifStatus === "denied"
                     ? "Hãy vào cài đặt trình duyệt để bật lại quyền thông báo."
-                    : "Nhận thông báo đẩy với câu hỏi từ vựng mỗi 2 tiếng. Ôn tập mọi lúc mọi nơi!"}
+                    : "Nhận thông báo đẩy với câu hỏi từ vựng mỗi 1 tiếng. Ôn tập mọi lúc mọi nơi!"}
               </p>
             </div>
           </div>

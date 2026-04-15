@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
     // Generate unique, dynamic IDs for each button to prevent browser de-duplication
     const timestamp = Date.now();
-    const buttonIds = shuffledChoices.map((_, i) => `btn_${i}_${timestamp}_${Math.random().toString(36).substring(7)}`);
+    const buttonIds = shuffledChoices.map((_: any, i: number) => `btn_${i}_${timestamp}_${Math.random().toString(36).substring(7)}`);
     const correctId = buttonIds[correctDisplayIndex];
 
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         contents: { en: content, vi: content },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
-        web_buttons: shuffledChoices.map((c, i) => ({
+        web_buttons: shuffledChoices.map((c: any, i: number) => ({
           id: buttonIds[i], 
           text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
           url: appUrl + "&_osp=do_not_open&btn_id=" + buttonIds[i]
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_id: correctId,
-          choices: shuffledChoices.map(c => c.text),
+          choices: shuffledChoices.map((c: any) => c.text),
           button_ids: buttonIds
         },
         ttl: 7200,
