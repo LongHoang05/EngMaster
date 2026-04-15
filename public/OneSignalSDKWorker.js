@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// Version 7.0 - Absolute Separation (LEFT/RIGHT)
+// Version 8.0 - Iconic Separation (L/R)
 self.addEventListener("notificationclick", (event) => {
   const actionId = String(event.action || ""); 
   const notification = event.notification;
@@ -14,21 +14,21 @@ self.addEventListener("notificationclick", (event) => {
   const correctSide = String(data.correct_side || "");
   let isCorrect = false;
 
-  // 1. ABSOLUTE SIDE MATCHING
-  if (actionId === "QUIZ_LEFT" && correctSide === "LEFT") {
+  // 1. SIMPLE L/R MATCHING
+  if (actionId === "L" && correctSide === "L") {
     isCorrect = true;
-  } else if (actionId === "QUIZ_RIGHT" && correctSide === "RIGHT") {
+  } else if (actionId === "R" && correctSide === "R") {
     isCorrect = true;
   }
 
   // 2. SHOW RESULT WITH VERSION STAMP
-  const version = "[v7]";
+  const version = "[v8]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  const footer = `\n(Side: ${actionId.replace("QUIZ_", "")})`;
+  const footer = `\n(Side: ${actionId})`;
 
   event.waitUntil(
     self.registration.showNotification(title, {

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       .sort((a: any, b: any) => a.sort - b.sort);
 
     const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
-    const correctSide = correctDisplayIndex === 0 ? "LEFT" : "RIGHT";
+    const correctSide = correctDisplayIndex === 0 ? "L" : "R";
 
     const appUrl = `https://study-engmaster.vercel.app/?word=${encodeURIComponent(word)}`;
 
@@ -65,20 +65,22 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v7]", vi: "🧠 Thử thách [v7]" },
+        headings: { en: "🧠 Thử thách [v8]", vi: "🧠 Thử thách [v8]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
         web_buttons: [
           {
-            id: "QUIZ_LEFT",
-            text: `A) ${shuffledChoices[0].text}`,
-            url: appUrl + "&action=v7_left&_osp=do_not_open"
+            id: "L",
+            text: shuffledChoices[0].text,
+            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524456.png", // Blue dot
+            url: appUrl + "&a=left&v=8"
           },
           {
-            id: "QUIZ_RIGHT",
-            text: `B) ${shuffledChoices[1].text}`,
-            url: appUrl + "&choice=v7_right&_osp=do_not_open"
+            id: "R",
+            text: shuffledChoices[1].text,
+            icon: "https://cdn-icons-png.flaticon.com/512/2524/2524440.png", // Green dot
+            url: appUrl + "&a=right&v=8"
           }
         ],
         data: {
@@ -86,17 +88,17 @@ export async function POST(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_side: correctSide,
-          v: 7
+          v: 8
         },
         ttl: 7200,
       }),
     });
 
     const result = await response.json();
-    return NextResponse.json({ success: response.ok, message: `Quiz [v7] sent: "${word}"`, details: result });
+    return NextResponse.json({ success: response.ok, message: `Quiz [v8] sent: "${word}"`, details: result });
 
   } catch (error: any) {
-    console.error("Critical error in [v7] notification:", error);
+    console.error("Critical error in [v8] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
