@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         web_buttons: shuffledChoices.map((c, i) => ({
           id: String(i), // Numeric ID is safest for all OS
           text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
-          url: appUrl + "&_osp=do_not_open"
+          url: appUrl + "&_osp=do_not_open&btn=" + i // Make URL unique to prevent de-duplication
         })),
         data: {
           type: "quiz",
