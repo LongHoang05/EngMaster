@@ -42,15 +42,16 @@ export async function POST(req: Request) {
         .limit(10); // Pick from a small set for speed
 
       if (error || !randomWords || randomWords.length === 0) {
-        return NextResponse.json({ error: "No vocabulary found to send" }, { status: 404 });
+        // Emergency fallback if database query fails or is empty
+        word = "Knowledge";
+        correctMeaning = "Kiến thức";
+        choicesText = ["Kiến thức", "Sự ngu dốt"];
+      } else {
+        const randomItem = randomWords[Math.floor(Math.random() * randomWords.length)];
+        word = randomItem.word;
+        correctMeaning = randomItem.meaning;
+        choicesText = [correctMeaning, "Đáp án ngẫu nhiên A", "Đáp án ngẫu nhiên B"].slice(0, 2);
       }
-
-      const randomItem = randomWords[Math.floor(Math.random() * randomWords.length)];
-      word = randomItem.word;
-      correctMeaning = randomItem.meaning;
-      
-      // Generate some dummy choices for the random word
-      choicesText = [correctMeaning, "Đáp án ngẫu nhiên A", "Đáp án ngẫu nhiên B"].slice(0, 2);
     }
 
     // 4. Prepare choices

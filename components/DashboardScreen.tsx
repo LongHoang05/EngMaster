@@ -507,7 +507,15 @@ export default function DashboardScreen({
 
                     const res = await fetch(
                       `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
-                      { method: "POST" },
+                      { 
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          word: "Abandon",
+                          correctMeaning: "Từ bỏ",
+                          choices: ["Từ bỏ", "Kiên trì"]
+                        })
+                      },
                     );
                     const data = await res.json();
                     if (!data.success) {
