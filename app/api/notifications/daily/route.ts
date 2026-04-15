@@ -20,64 +20,51 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Fetch 2 random vocabulary words (1 target, 1 distractor for better Chrome compatibility)
-    const { count, error: countError } = await supabaseServer
+    // 1. Fetch vocabularies
+    const { data: allVocabs, error: fetchError } = await supabaseServer
       .from("vocabularies")
-      .select("*", { count: "exact", head: true });
+      .select("word, ipa, meanings");
 
-    if (countError) throw countError;
-    if (!count || count < 2) {
-      return NextResponse.json({ message: "Not enough vocabularies for a quiz." }, { status: 200 });
+    if (fetchError) throw fetchError;
+    if (!allVocabs || allVocabs.length < 2) {
+      return NextResponse.json({ message: "Not enough vocabularies." }, { status: 200 });
     }
 
-    // Generate 2 unique random offsets
-    const offsets = new Set<number>();
-    while (offsets.size < 2) {
-      offsets.add(Math.floor(Math.random() * count));
-    }
-    const offsetArray = Array.from(offsets);
-
-    // Fetch the 2 vocabs
-    const vocabs = [];
-    for (const offset of offsetArray) {
-      const { data } = await supabaseServer
-        .from("vocabularies")
-        .select("word, ipa, meanings")
-        .range(offset, offset)
-        .single();
-      if (data) vocabs.push(data);
-    }
-
-    if (vocabs.length < 2) throw new Error("Failed to fetch 2 vocabs");
-
-    const targetVocab = vocabs[0]; 
+    // 2. Pick a random target vocab
+    const targetIdx = Math.floor(Math.random() * allVocabs.length);
+    const targetVocab = allVocabs[targetIdx];
     const word = targetVocab.word;
     const ipa = targetVocab.ipa || "";
     const correctMeaning = Array.isArray(targetVocab.meanings) ? targetVocab.meanings[0] : targetVocab.meanings;
 
-    // Create 2 choices with unique IDs to prevent collisions
-    const choices = vocabs.map((v, index) => {
-      let text = Array.isArray(v.meanings) ? v.meanings[0] : v.meanings;
-      if (text.length > 20) text = text.substring(0, 17) + "...";
-      
-      return {
-        // Use word prefix to ensure ID is unique even if multiple notifications are active
-        id: `choice_${word.replace(/\s+/g, "_")}_${index}`,
-        text: text,
-        isCorrect: index === 0
-      };
-    });
+    // 3. Pick a random distractor (different from target)
+    let distractorIdx;
+    do {
+      distractorIdx = Math.floor(Math.random() * allVocabs.length);
+    } while (distractorIdx === targetIdx);
+    const distractorVocab = allVocabs[distractorIdx];
+    const distractorMeaning = Array.isArray(distractorVocab.meanings) ? distractorVocab.meanings[0] : distractorVocab.meanings;
+
+    // 4. Create choices
+    // Use simple "0" for correct, "1" for incorrect before shuffling
+    const rawChoices = [
+      { id: "0", text: correctMeaning, isCorrect: true },
+      { id: "1", text: distractorMeaning, isCorrect: false }
+    ];
 
     // Shuffle choices
-    const shuffledChoices = [...choices].sort(() => Math.random() - 0.5);
-    const correctChoiceId = shuffledChoices.find(c => c.isCorrect)?.id;
+    const shuffledChoices = [...rawChoices].sort(() => Math.random() - 0.5);
+    const correctChoiceId = "0"; // The Correct ID is always "0"
+    const correctDisplayIndex = shuffledChoices.findIndex(c => c.isCorrect);
 
-    // 2. Construct Notification
+    // 5. Construct Notification
     const heading = "🧠 Thử thách trắc nghiệm!";
     const content = `Từ "${word}" ${ipa ? `(${ipa}) ` : ""}có nghĩa là gì?`;
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://study-engmaster.vercel.app") + "?_osp=do_not_open";
 
-    // 3. Send via OneSignal (Using web_buttons for Chrome compatibility)
+    console.log(`Sending Quiz: Word="${word}", Correct="${correctMeaning}" (ID="0"), Distractor="${distractorMeaning}" (ID="1")`);
+
+    // 6. Send via OneSignal
     const response = await fetch("https://api.onesignal.com/notifications", {
       method: "POST",
       headers: {
@@ -91,20 +78,18 @@ export async function GET(request: Request) {
         contents: { en: content, vi: content },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: appUrl,
-        // MUST use web_buttons for Web SDK v16+ on browsers
         web_buttons: shuffledChoices.map(c => ({
           id: c.id,
-          text: c.text,
+          text: c.text.length > 20 ? c.text.substring(0, 17) + "..." : c.text,
           url: appUrl
         })),
         data: {
           type: "quiz",
-          correct_id: correctChoiceId,
-          correct_index: shuffledChoices.findIndex(c => c.isCorrect),
+          correct_id: "0",
+          correct_index: correctDisplayIndex,
           word: word,
           correct_meaning: correctMeaning,
-          // Store all choice IDs so SW can match by index
-          choice_ids: shuffledChoices.map(c => c.id)
+          choice_texts: shuffledChoices.map(c => c.text)
         },
         ttl: 7200,
       }),
