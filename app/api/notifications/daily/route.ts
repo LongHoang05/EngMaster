@@ -79,18 +79,18 @@ async function handleNotification(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v17]", vi: "🧠 Thử thách [v17]" },
+        headings: { en: "🧠 Thử thách [v18]", vi: "🧠 Thử thách [v18]" },
         contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
         url: "", 
         web_buttons: [
           {
-            id: "CHOICE_0_v17",
+            id: "btn_A_v18",
             text: shuffledChoices[0].text,
             url: "" 
           },
           {
-            id: "CHOICE_1_v17",
+            id: "btn_B_v18",
             text: shuffledChoices[1].text,
             url: ""
           }
@@ -100,7 +100,7 @@ async function handleNotification(req: Request) {
           word: word,
           correct_meaning: correctMeaning,
           correct_idx_flag: correctIdxFlag,
-          v: 17,
+          v: 18,
           _osp: "do_not_open"
         },
         ttl: 7200,
@@ -110,11 +110,11 @@ async function handleNotification(req: Request) {
     const result = await response.json();
     return NextResponse.json({ 
       success: response.ok, 
-      message: `Quiz [v17] sent: "${word}"`, 
+      message: `Quiz [v18] sent: "${word}"`, 
       details: result 
     });
   } catch (error: any) {
-    console.error("Critical error in [v17] notification:", error);
+    console.error("Critical error in [v18] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

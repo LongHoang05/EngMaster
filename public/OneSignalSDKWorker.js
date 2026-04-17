@@ -15,22 +15,24 @@ self.addEventListener("notificationclick", (event) => {
   if (rawData && rawData.additionalData) data = rawData.additionalData;
   if (!data || data.type !== "quiz") return;
 
-  // --- ROBUST ID-BASED MAPPING [v17] ---
-  // Instead of trusting the array index (which browsers can swap), 
-  // we parse the intended index directly from the actionId string.
+  // --- ROBUST ID-BASED MAPPING [v18] ---
+  // We use very distinct IDs to avoid browser-level mapping issues.
   let clickedIdxOfOurButtons = -1;
-  if (actionId.includes("CHOICE_0")) clickedIdxOfOurButtons = 0;
-  else if (actionId.includes("CHOICE_1")) clickedIdxOfOurButtons = 1;
+  if (actionId === "btn_A_v18") clickedIdxOfOurButtons = 0;
+  else if (actionId === "btn_B_v18") clickedIdxOfOurButtons = 1;
 
   // If -1, it might be the main notification body click or a non-choice button
-  if (clickedIdxOfOurButtons === -1) return;
+  if (clickedIdxOfOurButtons === -1) {
+    console.log("Ignored or main body click. actionId:", actionId);
+    return;
+  }
 
   // correct_idx_flag was 0 or 1 in the API
   const correctIdx = Number(data.correct_idx_flag);
   const isCorrect = (clickedIdxOfOurButtons === correctIdx);
 
   // --- RESULTS ---
-  const version = "[v17]";
+  const version = "[v18]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
