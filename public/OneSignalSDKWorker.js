@@ -15,14 +15,14 @@ self.addEventListener("notificationclick", (event) => {
   if (rawData && rawData.additionalData) data = rawData.additionalData;
   if (!data || data.type !== "quiz") return;
 
-  // --- UNIVERSAL OFFSET LOGIC ---
-  // We don't trust the actionId directly. 
-  // We look at the list of actions and find which of OUR buttons was clicked.
-  const allActions = notification.actions || [];
-  const ourActions = allActions.filter(a => a.action && a.action.includes("CHOICE_"));
-  const clickedIdxOfOurButtons = ourActions.findIndex(a => a.action === actionId);
+  // --- ROBUST ID-BASED MAPPING [v17] ---
+  // Instead of trusting the array index (which browsers can swap), 
+  // we parse the intended index directly from the actionId string.
+  let clickedIdxOfOurButtons = -1;
+  if (actionId.includes("CHOICE_0")) clickedIdxOfOurButtons = 0;
+  else if (actionId.includes("CHOICE_1")) clickedIdxOfOurButtons = 1;
 
-  // If -1, it might be the main notification body click or Unsubscribe
+  // If -1, it might be the main notification body click or a non-choice button
   if (clickedIdxOfOurButtons === -1) return;
 
   // correct_idx_flag was 0 or 1 in the API
@@ -30,13 +30,13 @@ self.addEventListener("notificationclick", (event) => {
   const isCorrect = (clickedIdxOfOurButtons === correctIdx);
 
   // --- RESULTS ---
-  const version = "[v15]";
+  const version = "[v17]";
   const title = isCorrect ? `✅ CHÍNH XÁC! ${version}` : `❌ SAI RỒI! ${version}`;
   const body = isCorrect 
     ? `"${data.word}" chính là: ${data.correct_meaning}. 🎉`
     : `"${data.word}" có nghĩa là: ${data.correct_meaning}. 💪`;
 
-  const footer = `\n(Slot: ${clickedIdxOfOurButtons + 1})\n(List: ${allActions.map(a => a.action).join(", ")})`;
+  const footer = `\n(Slot: ${clickedIdxOfOurButtons + 1})\n(ID: ${actionId})`;
 
   event.waitUntil(
     self.registration.showNotification(title, {

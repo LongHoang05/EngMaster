@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Call Daily Notification API
         run: |
-          curl -fL -X GET "https://study-engmaster.vercel.app/api/notifications/daily?secret=${{ secrets.CRON_SECRET }}"
+          curl -fL -X POST "https://study-engmaster.vercel.app/api/notifications/daily?secret=${{ secrets.CRON_SECRET }}"
