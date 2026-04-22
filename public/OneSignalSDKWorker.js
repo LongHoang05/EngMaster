@@ -55,7 +55,7 @@ self.addEventListener("push", function(event) {
       actions: [{
         action: "submit_answer",
         type: "text",
-        title: "Gửi",
+        title: "Reply",
         placeholder: mode === "meaning" ? "Nhập nghĩa tiếng Việt..." : "Type English word..."
       }],
       data: {
