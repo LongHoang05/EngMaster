@@ -48,7 +48,7 @@ async function handleNotification(req: Request) {
         const offset = Math.floor(Math.random() * totalCount);
         const { data: randomWords, error } = await supabase
           .from('vocabularies')
-          .select('word, meaning')
+          .select('word, meanings')
           .range(offset, offset + 9);
 
         if (error || !randomWords || randomWords.length === 0) {
@@ -57,7 +57,7 @@ async function handleNotification(req: Request) {
         } else {
           const mainWord = randomWords[0];
           word = mainWord.word;
-          correctMeaning = mainWord.meaning;
+          correctMeaning = Array.isArray(mainWord.meanings) ? mainWord.meanings.join(', ') : mainWord.meanings;
         }
       }
     }
