@@ -1,9 +1,4 @@
-// Version 22.0 - Intercept push: Desktop=buttons, Mobile=text input
-
-// Detect mobile
-function isMobileDevice() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
+// Version 23.0 - Intercept push: Text input for all devices
 
 // Simple answer check
 function checkAnswer(userAnswer, correctAnswer) {
@@ -42,58 +37,35 @@ self.addEventListener("push", function(event) {
   // Prevent OneSignal from also showing a notification
   event.stopImmediatePropagation();
 
-  var title = rawData.title || rawData.headings || "🧠 Thử thách nhanh";
-  var body = rawData.alert || rawData.body || rawData.contents || 'Từ "' + quizData.word + '" có nghĩa là gì?';
   var icon = rawData.icon || "https://cdn-icons-png.flaticon.com/512/3898/3898082.png";
 
-  if (isMobileDevice()) {
-    // MOBILE: show notification with text input
-    var mode = quizData.mode || "meaning";
-    var prompt = mode === "meaning"
-      ? 'Nghĩa tiếng Việt của "' + quizData.word + '" là gì?'
-      : 'Từ tiếng Anh của "' + (quizData.correct_meaning || "").split(",")[0].trim() + '" là gì?';
+  // ALL DEVICES: show notification with text input
+  var mode = quizData.mode || "meaning";
+  var prompt = mode === "meaning"
+    ? 'Nghĩa tiếng Việt của "' + quizData.word + '" là gì?'
+    : 'Từ tiếng Anh của "' + (quizData.correct_meaning || "").split(",")[0].trim() + '" là gì?';
 
-    event.waitUntil(
-      self.registration.showNotification("📝 Thử thách nhanh", {
-        body: prompt,
-        icon: icon,
-        tag: "quiz-input",
-        renotify: true,
-        requireInteraction: true,
-        actions: [{
-          action: "submit_answer",
-          type: "text",
-          title: "Gửi",
-          placeholder: mode === "meaning" ? "Nhập nghĩa tiếng Việt..." : "Type English word..."
-        }],
-        data: {
-          type: "quiz_answer",
-          word: quizData.word,
-          correct_meaning: quizData.correct_meaning,
-          mode: mode
-        }
-      })
-    );
-  } else {
-    // DESKTOP: show notification with 2 choice buttons
-    event.waitUntil(
-      self.registration.showNotification(title, {
-        body: body,
-        icon: icon,
-        tag: "quiz-question",
-        actions: [
-          { action: "btn_A", title: quizData.choice_a || "A" },
-          { action: "btn_B", title: quizData.choice_b || "B" }
-        ],
-        data: {
-          type: "quiz_desktop",
-          word: quizData.word,
-          correct_meaning: quizData.correct_meaning,
-          correct_idx_flag: quizData.correct_idx_flag
-        }
-      })
-    );
-  }
+  event.waitUntil(
+    self.registration.showNotification("📝 Thử thách nhanh", {
+      body: prompt,
+      icon: icon,
+      tag: "quiz-input",
+      renotify: true,
+      requireInteraction: true,
+      actions: [{
+        action: "submit_answer",
+        type: "text",
+        title: "Gửi",
+        placeholder: mode === "meaning" ? "Nhập nghĩa tiếng Việt..." : "Type English word..."
+      }],
+      data: {
+        type: "quiz_answer",
+        word: quizData.word,
+        correct_meaning: quizData.correct_meaning,
+        mode: mode
+      }
+    })
+  );
 }, true);
 
 // =============================================
@@ -110,31 +82,8 @@ self.addEventListener("notificationclick", function(event) {
   var data = notification.data;
   if (!data) return;
 
-  // Desktop button click
-  if (data.type === "quiz_desktop") {
-    if (actionId === "btn_A" || actionId === "btn_B") {
-      var clickedIdx = actionId === "btn_A" ? 0 : 1;
-      var correctIdx = Number(data.correct_idx_flag);
-      var isCorrect = (clickedIdx === correctIdx);
 
-      event.waitUntil(
-        self.registration.showNotification(
-          isCorrect ? "✅ CHÍNH XÁC!" : "❌ SAI RỒI!",
-          {
-            body: isCorrect
-              ? '"' + data.word + '" chính là: ' + data.correct_meaning + '. 🎉'
-              : '"' + data.word + '" có nghĩa là: ' + data.correct_meaning + '. 💪',
-            icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-            tag: "quiz-result",
-            renotify: true
-          }
-        )
-      );
-    }
-    return;
-  }
-
-  // Mobile text reply
+  // Text reply
   if (data.type === "quiz_answer" && actionId === "submit_answer") {
     var userReply = (event.reply || "").toString().trim();
     var mode = data.mode || "meaning";

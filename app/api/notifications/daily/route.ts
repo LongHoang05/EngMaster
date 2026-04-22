@@ -22,7 +22,6 @@ async function handleNotification(req: Request) {
 
     let word = "";
     let correctMeaning = "";
-    let wrongMeaning = "";
 
     if (req.method === 'POST') {
       try {
@@ -45,7 +44,6 @@ async function handleNotification(req: Request) {
       if (totalCount === 0) {
         word = "Knowledge";
         correctMeaning = "Kiến thức";
-        wrongMeaning = "Sự ngu dốt";
       } else {
         const offset = Math.floor(Math.random() * totalCount);
         const { data: randomWords, error } = await supabase
@@ -56,30 +54,19 @@ async function handleNotification(req: Request) {
         if (error || !randomWords || randomWords.length === 0) {
           word = "Knowledge";
           correctMeaning = "Kiến thức";
-          wrongMeaning = "Sự ngu dốt";
         } else {
           const mainWord = randomWords[0];
           word = mainWord.word;
           correctMeaning = mainWord.meaning;
-
-          const others = randomWords.filter(w => w.word !== word);
-          wrongMeaning = others.length > 0
-            ? others[Math.floor(Math.random() * others.length)].meaning
-            : "Đáp án khác";
         }
       }
     }
 
-    if (!wrongMeaning) wrongMeaning = "Đáp án khác";
-
-    // Shuffle 2 choices for desktop buttons
-    const choices = [correctMeaning, wrongMeaning];
-    const shuffled = Math.random() < 0.5 ? [choices[0], choices[1]] : [choices[1], choices[0]];
-    const correctIdx = shuffled.indexOf(correctMeaning);
-
-    // Random quiz mode for mobile
+    // Random quiz mode for all devices
     const quizMode = Math.random() < 0.5 ? "meaning" : "word";
-    const questionText = `Từ "${word}" có nghĩa là gì?`;
+    const questionText = quizMode === "meaning" 
+      ? `Nghĩa tiếng Việt của "${word}" là gì?`
+      : `Từ tiếng Anh của "${correctMeaning.split(",")[0].trim()}" là gì?`;
 
     // Send via OneSignal — NO web_buttons, SW handles everything
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
@@ -99,11 +86,8 @@ async function handleNotification(req: Request) {
           type: "quiz_hybrid",
           word: word,
           correct_meaning: correctMeaning,
-          correct_idx_flag: correctIdx,
-          choice_a: shuffled[0],
-          choice_b: shuffled[1],
           mode: quizMode,
-          v: 22,
+          v: 23,
           _osp: "do_not_open"
         },
         ttl: 7200,
@@ -113,11 +97,11 @@ async function handleNotification(req: Request) {
     const result = await response.json();
     return NextResponse.json({
       success: response.ok,
-      message: `Quiz [v22] sent: "${word}" (mobile: ${quizMode})`,
+      message: `Quiz [v23] sent: "${word}" (mode: ${quizMode})`,
       details: result
     });
   } catch (error: any) {
-    console.error("Critical error in [v22] notification:", error);
+    console.error("Critical error in [v23] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
