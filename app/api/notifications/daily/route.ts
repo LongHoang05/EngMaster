@@ -7,7 +7,7 @@ const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 const NOTIFICATION_SECRET = "engmaster_secret_lhg_push";
 
-// Base URL for the quiz page
+// Base URL for the quiz page (mobile)
 const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL 
   || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://ielts-app-ruby.vercel.app");
 
@@ -29,6 +29,7 @@ async function handleNotification(req: Request) {
 
     let word = "";
     let correctMeaning = "";
+    let choicesText: string[] = [];
 
     // 3. Extract Data from Body (Only if POST)
     if (req.method === 'POST') {
@@ -36,6 +37,7 @@ async function handleNotification(req: Request) {
         const body = await req.json();
         word = body?.word || "";
         correctMeaning = body?.correctMeaning || "";
+        choicesText = body?.choices || [];
       } catch (e) {
         console.warn("Could not parse JSON body, falling back to random word.");
       }
@@ -51,24 +53,43 @@ async function handleNotification(req: Request) {
       if (error || !randomWords || randomWords.length === 0) {
         word = "Knowledge";
         correctMeaning = "Kiến thức";
+        choicesText = ["Kiến thức", "Sự ngu dốt"];
       } else {
         const randomItem = randomWords[Math.floor(Math.random() * randomWords.length)];
         word = randomItem.word;
         correctMeaning = randomItem.meaning;
+        // Pick a random wrong answer from other words
+        const otherWords = randomWords.filter(w => w.word !== word);
+        const wrongAnswer = otherWords.length > 0 
+          ? otherWords[Math.floor(Math.random() * otherWords.length)].meaning 
+          : "Đáp án khác";
+        choicesText = [correctMeaning, wrongAnswer];
       }
     }
 
-    // 5. Randomly choose quiz mode: "meaning" (ask meaning) or "word" (ask English word)
+    // 5. Randomly choose quiz mode for mobile: "meaning" or "word"
     const quizMode = Math.random() < 0.5 ? "meaning" : "word";
 
-    const questionText = quizMode === "meaning"
-      ? `Nghĩa của từ "${word}" là gì?`
-      : `Từ tiếng Anh của "${correctMeaning.split(",")[0].trim()}" là gì?`;
+    // 6. Prepare desktop buttons (shuffled 2 choices)
+    const finalChoices = (choicesText && choicesText.length > 0) ? choicesText : [correctMeaning, "Đáp án khác"];
+    if (finalChoices.length === 1) finalChoices.push("Đáp án khác");
 
-    // Build quiz URL with params
-    const quizUrl = `${APP_BASE_URL}/quiz-notify?word=${encodeURIComponent(word)}&meaning=${encodeURIComponent(correctMeaning)}&mode=${quizMode}`;
+    const shuffledChoices = finalChoices
+      .map((text: string) => ({ text, sort: Math.random() }))
+      .sort((a: any, b: any) => a.sort - b.sort);
 
-    // 6. Send Notification via OneSignal
+    const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
+
+    // 7. Notification content — question always asks meaning of word
+    const questionText = `Từ "${word}" có nghĩa là gì?`;
+
+    // Build quiz URL for mobile (with random mode)
+    const mobileQuestionMode = quizMode;
+    const quizUrl = `${APP_BASE_URL}/quiz-notify?word=${encodeURIComponent(word)}&meaning=${encodeURIComponent(correctMeaning)}&mode=${mobileQuestionMode}`;
+
+    // 8. Send Notification via OneSignal
+    // Desktop: web_buttons show 2 choices → Service Worker handles inline
+    // Mobile: no web_buttons shown → body click → Service Worker opens quiz page
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
@@ -81,14 +102,28 @@ async function handleNotification(req: Request) {
         headings: { en: "🧠 Thử thách nhanh", vi: "🧠 Thử thách nhanh" },
         contents: { en: questionText, vi: questionText },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: quizUrl,
+        url: "",
+        web_buttons: [
+          {
+            id: "btn_B_v20",
+            text: shuffledChoices[1].text,
+            url: ""
+          },
+          {
+            id: "btn_A_v20",
+            text: shuffledChoices[0].text,
+            url: ""
+          }
+        ],
         data: {
-          type: "quiz_input",
+          type: "quiz_hybrid",
           word: word,
           correct_meaning: correctMeaning,
-          mode: quizMode,
+          correct_idx_flag: correctDisplayIndex,
+          mode: mobileQuestionMode,
           quiz_url: quizUrl,
           v: 20,
+          _osp: "do_not_open"
         },
         ttl: 7200,
       }),
@@ -97,7 +132,7 @@ async function handleNotification(req: Request) {
     const result = await response.json();
     return NextResponse.json({ 
       success: response.ok, 
-      message: `Quiz [v20] sent: "${word}" (mode: ${quizMode})`, 
+      message: `Quiz [v20 hybrid] sent: "${word}" (mobile mode: ${quizMode})`, 
       quizUrl,
       details: result 
     });
