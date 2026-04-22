@@ -7,6 +7,10 @@ const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 const NOTIFICATION_SECRET = "engmaster_secret_lhg_push";
 
+// Base URL for the quiz page
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL 
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://ielts-app-ruby.vercel.app");
+
 async function handleNotification(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -25,7 +29,6 @@ async function handleNotification(req: Request) {
 
     let word = "";
     let correctMeaning = "";
-    let choicesText: string[] = [];
 
     // 3. Extract Data from Body (Only if POST)
     if (req.method === 'POST') {
@@ -33,7 +36,6 @@ async function handleNotification(req: Request) {
         const body = await req.json();
         word = body?.word || "";
         correctMeaning = body?.correctMeaning || "";
-        choicesText = body?.choices || [];
       } catch (e) {
         console.warn("Could not parse JSON body, falling back to random word.");
       }
@@ -49,25 +51,22 @@ async function handleNotification(req: Request) {
       if (error || !randomWords || randomWords.length === 0) {
         word = "Knowledge";
         correctMeaning = "Kiến thức";
-        choicesText = ["Kiến thức", "Sự ngu dốt"];
       } else {
         const randomItem = randomWords[Math.floor(Math.random() * randomWords.length)];
         word = randomItem.word;
         correctMeaning = randomItem.meaning;
-        choicesText = [correctMeaning, "Đáp án khác"].slice(0, 2);
       }
     }
 
-    // 5. Shuffling and formatting choices
-    const finalChoices = (choicesText && choicesText.length > 0) ? choicesText : [correctMeaning, "Đáp án khác"];
-    if (finalChoices.length === 1) finalChoices.push("Đáp án khác");
+    // 5. Randomly choose quiz mode: "meaning" (ask meaning) or "word" (ask English word)
+    const quizMode = Math.random() < 0.5 ? "meaning" : "word";
 
-    const shuffledChoices = finalChoices
-      .map((text: string) => ({ text, sort: Math.random() }))
-      .sort((a: any, b: any) => a.sort - b.sort);
+    const questionText = quizMode === "meaning"
+      ? `Nghĩa của từ "${word}" là gì?`
+      : `Từ tiếng Anh của "${correctMeaning.split(",")[0].trim()}" là gì?`;
 
-    const correctDisplayIndex = shuffledChoices.findIndex((c: any) => c.text === correctMeaning);
-    const correctIdxFlag = correctDisplayIndex; 
+    // Build quiz URL with params
+    const quizUrl = `${APP_BASE_URL}/quiz-notify?word=${encodeURIComponent(word)}&meaning=${encodeURIComponent(correctMeaning)}&mode=${quizMode}`;
 
     // 6. Send Notification via OneSignal
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
@@ -79,29 +78,17 @@ async function handleNotification(req: Request) {
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         ...(targetId ? { include_subscription_ids: [targetId] } : { included_segments: ["Total Subscriptions"] }),
-        headings: { en: "🧠 Thử thách [v19]", vi: "🧠 Thử thách [v19]" },
-        contents: { en: `Từ "${word}" có nghĩa là gì?`, vi: `Từ "${word}" có nghĩa là gì?` },
+        headings: { en: "🧠 Thử thách nhanh", vi: "🧠 Thử thách nhanh" },
+        contents: { en: questionText, vi: questionText },
         chrome_web_icon: "https://cdn-icons-png.flaticon.com/512/3898/3898082.png",
-        url: "", 
-        web_buttons: [
-          {
-            id: "btn_B_v19",
-            text: shuffledChoices[1].text,
-            url: "" 
-          },
-          {
-            id: "btn_A_v19",
-            text: shuffledChoices[0].text,
-            url: ""
-          }
-        ],
+        url: quizUrl,
         data: {
-          type: "quiz",
+          type: "quiz_input",
           word: word,
           correct_meaning: correctMeaning,
-          correct_idx_flag: correctIdxFlag,
-          v: 19,
-          _osp: "do_not_open"
+          mode: quizMode,
+          quiz_url: quizUrl,
+          v: 20,
         },
         ttl: 7200,
       }),
@@ -110,11 +97,12 @@ async function handleNotification(req: Request) {
     const result = await response.json();
     return NextResponse.json({ 
       success: response.ok, 
-      message: `Quiz [v19] sent: "${word}"`, 
+      message: `Quiz [v20] sent: "${word}" (mode: ${quizMode})`, 
+      quizUrl,
       details: result 
     });
   } catch (error: any) {
-    console.error("Critical error in [v19] notification:", error);
+    console.error("Critical error in [v20] notification:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
