@@ -509,12 +509,7 @@ export default function DashboardScreen({
                       `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
                       { 
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          word: "Abandon",
-                          correctMeaning: "Từ bỏ",
-                          choices: ["Từ bỏ", "Kiên trì"]
-                        })
+                        headers: { "Content-Type": "application/json" }
                       },
                     );
                     const data = await res.json();
