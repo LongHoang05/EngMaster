@@ -38,6 +38,7 @@ import EditVocabularyModal from "@/components/EditVocabularyModal";
 import AddVocabularyBar from "@/components/AddVocabularyBar";
 import ExportExcelModal from "@/components/ExportExcelModal";
 import StreakCelebration from "@/components/StreakCelebration";
+import AppTour from "@/components/AppTour";
 
 export default function EngMaster() {
   const [userCode, setUserCode] = useState<string | null>(null);
@@ -429,6 +430,7 @@ export default function EngMaster() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] flex flex-col font-sans">
       <Toaster position="top-center" richColors />
+      <AppTour setActiveTab={setActiveTab} onBackToList={() => setSelectedTopic(null)} />
 
       {/* Sidebar / Topnav */}
       <nav className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-2 sm:px-4 md:px-8 py-2.5 md:py-4 flex items-center justify-between shadow-sm">
@@ -456,7 +458,7 @@ export default function EngMaster() {
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
-              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${
+              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${tab.id === 'topics' ? 'tour-tab-topics' : ''} ${tab.id === 'quiz' ? 'tour-tab-quiz' : ''} ${tab.id === 'dashboard' ? 'tour-tab-progress' : ''} ${
                 activeTab === tab.id
                   ? "bg-white text-indigo-600 shadow-[0_4px_12px_rgba(79,70,229,0.12)] border border-slate-100 scale-105"
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"

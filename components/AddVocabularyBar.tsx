@@ -168,7 +168,7 @@ export default function AddVocabularyBar({
                   : "Chủ đề được chia sẻ"
               }
               readOnly={!isOwner}
-              className="w-full pl-14 pr-6 py-4 md:py-5 bg-slate-50/50 border-2 border-slate-100 rounded-3xl text-lg font-bold text-slate-800 outline-none focus:border-indigo-400 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] transition-all placeholder:font-medium placeholder:text-slate-300"
+              className="tour-add-vocab-input w-full pl-14 pr-6 py-4 md:py-5 bg-slate-50/50 border-2 border-slate-100 rounded-3xl text-lg font-bold text-slate-800 outline-none focus:border-indigo-400 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] transition-all placeholder:font-medium placeholder:text-slate-300"
             />
 
             {/* Autocomplete Suggestions */}
@@ -189,7 +189,7 @@ export default function AddVocabularyBar({
                         setSuggestions([]);
                         fetchDictionary(s.word);
                       }}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-indigo-50/50 transition-colors group/item"
+                      className="tour-suggestion-item w-full px-6 py-4 flex items-center justify-between hover:bg-indigo-50/50 transition-colors group/item"
                     >
                       <div className="flex items-center gap-3">
                         <BookOpen size={16} className="text-slate-400 group-hover/item:text-indigo-500" />
@@ -212,7 +212,7 @@ export default function AddVocabularyBar({
             <button
               disabled={!hasVocab}
               onClick={onStartFlashcards}
-              className="flex-1 md:flex-none flex items-center justify-center gap-3 px-8 py-4 md:py-5 bg-indigo-600 text-white font-black rounded-3xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 disabled:opacity-50 disabled:grayscale transition-all active:scale-95 group/btn"
+              className="tour-flashcard-btn flex-1 md:flex-none flex items-center justify-center gap-3 px-8 py-4 md:py-5 bg-indigo-600 text-white font-black rounded-3xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 disabled:opacity-50 disabled:grayscale transition-all active:scale-95 group/btn"
             >
               <Sparkles size={20} className="group-hover/btn:animate-spin" />
               <span>Học Flashcards</span>
@@ -227,12 +227,12 @@ export default function AddVocabularyBar({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              className="overflow-hidden tour-dict-result"
             >
               <div className="mt-8 p-5 md:p-8 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 rounded-3xl border-2 border-indigo-100/50 shadow-xl relative group/card">
                 <button
                   onClick={() => setDictInfo(null)}
-                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                  className="tour-dict-close-btn absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                 >
                   <X size={20} />
                 </button>

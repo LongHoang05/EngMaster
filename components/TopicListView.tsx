@@ -69,7 +69,7 @@ export default function TopicListView({
             {topics.length} bảng từ vựng đã lưu
           </p>
         </div>
-        <div className="w-full sm:w-auto flex flex-wrap gap-2">
+        <div className="tour-action-buttons w-full sm:w-auto flex flex-wrap gap-2">
             <ImportExcelButton userCode={userCode} onImportSuccess={onImportSuccess} />
             <button
               onClick={() => setIsExportExcelModalOpen(true)}
@@ -85,7 +85,7 @@ export default function TopicListView({
             </button>
             <button
               onClick={() => setIsAddTopicModalOpen(true)}
-              className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-indigo-200 whitespace-nowrap"
+              className="tour-step-add-topic inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-indigo-200 whitespace-nowrap"
             >
               <Plus size={16} /> Thêm chủ đề
             </button>
@@ -109,11 +109,11 @@ export default function TopicListView({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groupedTopics[catName].map((topic) => (
+                  {groupedTopics[catName].map((topic, index) => (
                     <button
                       key={topic.id}
                       onClick={() => onSelectTopic(topic)}
-                      className="group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden"
+                      className={`group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden ${index === 0 && catName === sortedCategories[0] ? 'tour-topic-item' : ''}`}
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full blur-2xl -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 

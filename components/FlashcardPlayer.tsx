@@ -93,7 +93,7 @@ export default function FlashcardPlayer({
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="p-3 bg-white text-slate-500 hover:text-indigo-600 rounded-2xl hover:bg-indigo-50 border border-slate-100 transition-all shadow-sm active:scale-90"
+            className="tour-flashcard-back-btn p-3 bg-white text-slate-500 hover:text-indigo-600 rounded-2xl hover:bg-indigo-50 border border-slate-100 transition-all shadow-sm active:scale-90"
           >
             <ChevronLeft size={24} />
           </button>
@@ -126,7 +126,7 @@ export default function FlashcardPlayer({
         </div>
       </div>
 
-      <div className="relative h-[400px] w-full perspective-2000 mb-12">
+      <div className="tour-flashcard-play-area relative h-[400px] w-full perspective-2000 mb-12">
         {/* Stack Effect Background Cards */}
         <div className="absolute inset-x-8 md:inset-x-12 top-6 bottom-0 bg-white rounded-[3rem] border border-slate-100 shadow-sm opacity-30 scale-90 translate-y-4 origin-bottom pointer-events-none z-0" />
         <div className="absolute inset-x-4 md:inset-x-6 top-3 bottom-0 bg-white rounded-[3rem] border border-slate-100 shadow-sm opacity-60 scale-95 translate-y-2 origin-bottom pointer-events-none z-[1]" />

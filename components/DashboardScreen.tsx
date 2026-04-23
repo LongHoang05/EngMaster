@@ -440,7 +440,7 @@ export default function DashboardScreen({
       </div>
 
       {/* 1.5. Notification Banner */}
-      <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl shadow-indigo-200/50 border border-indigo-500/20 p-6 md:p-8 relative overflow-hidden">
+      <div className="tour-notif-banner bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl shadow-indigo-200/50 border border-indigo-500/20 p-6 md:p-8 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none"></div>
@@ -552,7 +552,7 @@ export default function DashboardScreen({
       </div>
 
       {/* 2. Leaderboard Section */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+      <div className="tour-leaderboard bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
         {/* Header with Tabs */}
         <div
           className={`p-6 md:p-8 border-b border-slate-100 transition-colors duration-500 ${

@@ -80,3 +80,33 @@ button:active {
   backface-visibility: hidden;
   -webkit-font-smoothing: subpixel-antialiased;
 }
+
+/* ============================================
+   APP TOUR: Custom Joyride Styles
+   ============================================ */
+/* Nút Tiếp tục / Hoàn thành */
+div[id^="react-joyride-"] .joyride-tooltip__button--primary {
+  background-color: #4f46e5 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 8px 18px !important;
+  transition: all 0.2s ease !important;
+}
+
+div[id^="react-joyride-"] .joyride-tooltip__button--primary:hover {
+  background-color: #4338ca !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Nút Quay lại */
+div[id^="react-joyride-"] .joyride-tooltip__button--back {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  margin-right: 12px !important;
+}
+
+/* Nút Bỏ qua */
+div[id^="react-joyride-"] .joyride-tooltip__button--skip {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+}

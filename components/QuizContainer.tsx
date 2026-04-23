@@ -34,6 +34,7 @@ export default function QuizContainer({
   // Quiz Configs
   const [quizType, setQuizType] = useState("multiple_choice");
   const [questionCount, setQuestionCount] = useState(10);
+  const [timeLimit, setTimeLimit] = useState(0); // seconds, 0 = infinite
 
   // Quiz Data
   const [allWords, setAllWords] = useState<Vocabulary[]>([]);
@@ -49,6 +50,8 @@ export default function QuizContainer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isLoadingWords, setIsLoadingWords] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [testedWordIds, setTestedWordIds] = useState<Set<string>>(new Set());
   const [currentSourceWords, setCurrentSourceWords] = useState<Vocabulary[]>([]);
@@ -73,6 +76,28 @@ export default function QuizContainer({
       inputRef.current.focus();
     }
   }, [currentIndex, isAnswered, quizState]);
+
+  // Timer effect
+  useEffect(() => {
+    if (quizState === "playing" && timeLimit > 0) {
+      setTimeLeft(timeLimit);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            setQuizState("result");
+            onQuizCompleted();
+            toast.info("Hết thời gian!");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [quizState, timeLimit]);
 
   const fetchWordsAndStartQuiz = async () => {
     setIsLoadingWords(true);
@@ -344,7 +369,7 @@ export default function QuizContainer({
                                       : [...prev, topic.id],
                                   )
                                 }
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 text-sm font-medium transition-all ${isSel ? "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 shadow-sm"}`}
+                                className={`tour-quiz-topic-item flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 text-sm font-medium transition-all ${isSel ? "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 shadow-sm"}`}
                               >
                                 <div
                                   className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${isSel ? "bg-indigo-600 border-indigo-600 text-white" : "bg-slate-100 border-slate-300"}`}
@@ -367,7 +392,7 @@ export default function QuizContainer({
             <button
               onClick={() => setQuizState("config")}
               disabled={selectedTopics.length === 0}
-              className="w-full px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-50 transition-all active:scale-95"
+              className="tour-quiz-continue-btn w-full px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-50 transition-all active:scale-95"
             >
               Tiếp tục
             </button>
@@ -391,7 +416,7 @@ export default function QuizContainer({
             <select
               value={quizType}
               onChange={(e) => setQuizType(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+              className="tour-quiz-method-select w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
             >
               <option value="multiple_choice">Trắc nghiệm 4 đáp án</option>
               <option value="typing_en_to_vi">Gõ từ: Anh ➔ Việt</option>
@@ -416,11 +441,27 @@ export default function QuizContainer({
               <option value={9999}>♾️ Tất cả</option>
             </select>
           </div>
+          <div>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+              Giới hạn thời gian
+            </label>
+            <select
+              value={timeLimit}
+              onChange={(e) => setTimeLimit(Number(e.target.value))}
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+            >
+              <option value={0}>♾️ Không giới hạn</option>
+              <option value={30}>⏱️ 30 giây</option>
+              <option value={60}>⏱️ 1 phút</option>
+              <option value={120}>⏱️ 2 phút</option>
+              <option value={300}>⏱️ 5 phút</option>
+            </select>
+          </div>
         </div>
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => setQuizState("topic_selection")}
-            className="px-6 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+            className="tour-quiz-back-btn px-6 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
           >
             Quay lại
           </button>
@@ -454,9 +495,16 @@ export default function QuizContainer({
         </div>
 
         <div className="flex justify-between items-center mb-6 px-2">
-          <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full flex items-center gap-2 border border-indigo-100 shadow-sm uppercase tracking-wider">
-            Câu {currentIndex + 1} / {questions.length}
-          </span>
+          <div className="flex gap-2">
+            <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full flex items-center gap-2 border border-indigo-100 shadow-sm uppercase tracking-wider">
+              Câu {currentIndex + 1} / {questions.length}
+            </span>
+            {timeLimit > 0 && (
+              <span className={`text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-2 border shadow-sm uppercase tracking-wider ${timeLeft < 10 ? "bg-rose-50 text-rose-600 border-rose-100 animate-pulse" : "bg-slate-50 text-slate-600 border-slate-100"}`}>
+                ⏱️ {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-amber-600 font-black bg-amber-50 px-4 py-1.5 rounded-full border border-amber-100 shadow-sm flex items-center gap-2 uppercase tracking-wider">
             Điểm: {score}
           </span>
