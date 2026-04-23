@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Step, EventData, STATUS, ACTIONS, EVENTS } from "react-joyride";
 
@@ -18,6 +18,7 @@ interface AppTourProps {
 export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }: AppTourProps) {
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const isTransitioning = useRef(false);
 
   // Khóa cuộn trang khi tour đang chạy
   useEffect(() => {
@@ -131,16 +132,60 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
       else if (action === ACTIONS.PREV) {
         if (index === 9) {
           // Bước 10 -> 9: Quay lại Quiz config
+          isTransitioning.current = true;
           setActiveTab("quiz");
-          setTimeout(() => {
+
+          // Phase 1: Đợi topic item xuất hiện rồi click chọn
+          const waitForTopic = setInterval(() => {
+            // Nếu đã ở config rồi thì xong luôn
+            if (document.querySelector('.tour-quiz-method-select')) {
+              clearInterval(waitForTopic);
+              isTransitioning.current = false;
+              setStepIndex(nextStepIndex);
+              return;
+            }
             const topic = document.querySelector('.tour-quiz-topic-item') as HTMLElement;
-            if (topic) topic.click();
-            setTimeout(() => {
-              const btn = document.querySelector('.tour-quiz-continue-btn') as HTMLElement;
-              if (btn) btn.click();
-              setTimeout(() => setStepIndex(nextStepIndex), 600);
-            }, 300);
-          }, 500);
+            if (topic) {
+              clearInterval(waitForTopic);
+              topic.click();
+
+              // Phase 2: Đợi nút "Tiếp tục" được bật (không disabled) rồi click
+              setTimeout(() => {
+                const waitForBtn = setInterval(() => {
+                  const btn = document.querySelector('.tour-quiz-continue-btn') as HTMLButtonElement;
+                  if (btn && !btn.disabled) {
+                    clearInterval(waitForBtn);
+                    btn.click();
+
+                    // Phase 3: Đợi màn hình config xuất hiện rồi chuyển step
+                    const waitForConfig = setInterval(() => {
+                      if (document.querySelector('.tour-quiz-method-select')) {
+                        clearInterval(waitForConfig);
+                        isTransitioning.current = false;
+                        setStepIndex(nextStepIndex);
+                      }
+                    }, 200);
+                    // Timeout safety cho phase 3
+                    setTimeout(() => {
+                      clearInterval(waitForConfig);
+                      isTransitioning.current = false;
+                      setStepIndex(nextStepIndex);
+                    }, 3000);
+                  }
+                }, 200);
+                // Timeout safety cho phase 2
+                setTimeout(() => {
+                  clearInterval(waitForBtn);
+                  isTransitioning.current = false;
+                }, 5000);
+              }, 300);
+            }
+          }, 300);
+          // Timeout safety cho phase 1
+          setTimeout(() => {
+            clearInterval(waitForTopic);
+            isTransitioning.current = false;
+          }, 8000);
         }
         else if (index === 8) {
           // Bước 9 -> 8: Quay lại danh sách quiz
@@ -149,13 +194,47 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
           setTimeout(() => setStepIndex(nextStepIndex), 500);
         }
         else if (index === 7) {
-          // Bước 8 -> 7: Quay lại Topics
+          // Bước 8 -> 7: Quay lại Topics và mở từ điển
           setActiveTab("topics");
           setTimeout(() => {
             const el = document.querySelector('.tour-topic-item') as HTMLElement;
             if (el) el.click();
-            setTimeout(() => setStepIndex(nextStepIndex), 500);
+            
+            setTimeout(() => {
+              // Trigger lại việc nhập từ để hiện dict result
+              const input = document.querySelector('.tour-add-vocab-input') as HTMLInputElement;
+              if (input) {
+                const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+                setter?.call(input, 'phenomenon');
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                setTimeout(() => {
+                  const suggestion = document.querySelector('.tour-suggestion-item') as HTMLElement;
+                  if (suggestion) suggestion.click();
+                  setTimeout(() => setStepIndex(nextStepIndex), 1000);
+                }, 1000);
+              } else {
+                setStepIndex(nextStepIndex);
+              }
+            }, 800);
           }, 500);
+        }
+        else if (index === 6) {
+          // Bước 7 -> 6: Quay lại nhập từ (Đóng từ điển)
+          const el = document.querySelector('.tour-dict-close-btn') as HTMLElement;
+          if (el) el.click();
+          setTimeout(() => setStepIndex(nextStepIndex), 500);
+        }
+        else if (index === 5) {
+          // Bước 6 -> 5: Quay lại Flashcard
+          const el = document.querySelector('.tour-flashcard-btn') as HTMLElement;
+          if (el) el.click();
+          setTimeout(() => setStepIndex(nextStepIndex), 800);
+        }
+        else if (index === 4) {
+          // Bước 5 -> 4: Quay lại Topic detail (Đóng Flashcard)
+          const el = document.querySelector('.tour-flashcard-back-btn') as HTMLElement;
+          if (el) el.click();
+          setTimeout(() => setStepIndex(nextStepIndex), 500);
         }
         else if (index === 3) {
           // Bước 4 -> 3: Quay lại danh sách chủ đề
@@ -173,7 +252,8 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
     }
 
     // Nếu không tìm thấy target, đợi rồi thử lại (không nhảy bước)
-    if (type === EVENTS.TARGET_NOT_FOUND) {
+    // Nhưng KHÔNG thử lại nếu đang trong quá trình chuyển đổi async
+    if (type === EVENTS.TARGET_NOT_FOUND && !isTransitioning.current) {
       setTimeout(() => {
         setStepIndex(index);
       }, 500);
@@ -298,6 +378,9 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
         },
         buttonSkip: {
           color: '#94a3b8',
+        },
+        buttonClose: {
+          display: 'none',
         },
       }}
       locale={{
