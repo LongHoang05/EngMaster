@@ -25,6 +25,21 @@ interface VocabularyListViewProps {
   isOwner: boolean;
 }
 
+const TYPE_COLORS: Record<string, string> = {
+  noun: "bg-blue-100 text-blue-700 border-blue-200",
+  verb: "bg-rose-100 text-rose-700 border-rose-200",
+  adj: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  adv: "bg-amber-100 text-amber-700 border-amber-200",
+  phrase: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  other: "bg-slate-100 text-slate-700 border-slate-200",
+};
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: "bg-emerald-50 text-emerald-600 border-emerald-100",
+  medium: "bg-indigo-50 text-indigo-600 border-indigo-100",
+  hard: "bg-rose-50 text-rose-600 border-rose-100",
+};
+
 export default function VocabularyListView({
   topic,
   vocabularies,
@@ -36,9 +51,15 @@ export default function VocabularyListView({
   onEditWord,
   isOwner,
 }: VocabularyListViewProps) {
-  const filteredVocab = vocabularies.filter((v) =>
-    v.word.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [filterType, setFilterType] = React.useState<string>("all");
+  const [filterDifficulty, setFilterDifficulty] = React.useState<string>("all");
+
+  const filteredVocab = vocabularies.filter((v) => {
+    const matchesSearch = v.word.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || v.word_type === filterType;
+    const matchesDifficulty = filterDifficulty === "all" || v.difficulty === filterDifficulty;
+    return matchesSearch && matchesType && matchesDifficulty;
+  });
 
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-fade-in mb-10">
@@ -94,6 +115,39 @@ export default function VocabularyListView({
             )}
           </div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+          <div className="flex items-center gap-2 bg-white/50 p-1 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-black uppercase text-slate-400 px-2">Loại từ</span>
+            <select 
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-transparent text-xs font-bold text-slate-600 outline-none pr-2"
+            >
+              <option value="all">Tất cả</option>
+              <option value="noun">Danh từ</option>
+              <option value="verb">Động từ</option>
+              <option value="adj">Tính từ</option>
+              <option value="adv">Trạng từ</option>
+              <option value="phrase">Cụm từ</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-white/50 p-1 rounded-xl border border-slate-100">
+            <span className="text-[10px] font-black uppercase text-slate-400 px-2">Độ khó</span>
+            <select 
+              value={filterDifficulty}
+              onChange={(e) => setFilterDifficulty(e.target.value)}
+              className="bg-transparent text-xs font-bold text-slate-600 outline-none pr-2"
+            >
+              <option value="all">Tất cả</option>
+              <option value="easy">Dễ</option>
+              <option value="medium">Vừa</option>
+              <option value="hard">Khó</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Body Table */}
@@ -130,6 +184,18 @@ export default function VocabularyListView({
                       <span className="text-lg font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
                         {v.word}
                       </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {v.word_type && (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${TYPE_COLORS[v.word_type]}`}>
+                            {v.word_type === "noun" ? "Noun" : v.word_type === "verb" ? "Verb" : v.word_type === "adj" ? "Adj" : v.word_type === "adv" ? "Adv" : v.word_type === "phrase" ? "Phrase" : "Other"}
+                          </span>
+                        )}
+                        {v.difficulty && (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${DIFFICULTY_COLORS[v.difficulty]}`}>
+                            {v.difficulty === "easy" ? "Dễ" : v.difficulty === "medium" ? "Vừa" : "Khó"}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-2 md:hidden">
                         <span className="text-[10px] font-mono text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100/50">
                           {v.ipa}

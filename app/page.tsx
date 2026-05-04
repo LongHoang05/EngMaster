@@ -13,6 +13,7 @@ import {
   GraduationCap,
   X,
   Edit2,
+  Settings,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -39,6 +40,9 @@ import AddVocabularyBar from "@/components/AddVocabularyBar";
 import ExportExcelModal from "@/components/ExportExcelModal";
 import StreakCelebration from "@/components/StreakCelebration";
 import AppTour from "@/components/AppTour";
+import CommandPalette from "@/components/CommandPalette";
+import SettingsModal from "@/components/SettingsModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function EngMaster() {
   const [userCode, setUserCode] = useState<string | null>(null);
@@ -54,7 +58,7 @@ export default function EngMaster() {
   const [flashcardQueue, setFlashcardQueue] = useState<Vocabulary[]>([]);
 
   // UI State
-  // const [isTopicLoading, setIsTopicLoading] = useState(false);
+  const [isTopicLoading, setIsTopicLoading] = useState(false);
   // const [isVocabLoading, setIsVocabLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -66,6 +70,10 @@ export default function EngMaster() {
   const [viewMode, setViewMode] = useState<"list" | "flashcards">("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  // Settings & Tour State
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [tourKey, setTourKey] = useState(0);
 
   // Streak Celebration State
   const [isStreakCelebrationOpen, setIsStreakCelebrationOpen] = useState(false);
@@ -86,7 +94,6 @@ export default function EngMaster() {
     }
     setIsAuthLoading(false);
   }, []);
-
 
   const handleLoginSuccess = (code: string) => {
     localStorage.setItem("eng_master_user_code", code);
@@ -170,7 +177,7 @@ export default function EngMaster() {
   // 2. FETCH TOPICS
   const fetchTopics = useCallback(async () => {
     if (!userCode) return;
-    // setIsTopicLoading(true);
+    setIsTopicLoading(true);
     try {
       const { data, error } = await supabase
         .from("topics")
@@ -186,7 +193,7 @@ export default function EngMaster() {
       );
       setTopics(formatted);
     } finally {
-      // setIsTopicLoading(false);
+      setIsTopicLoading(false);
     }
   }, [userCode]);
 
@@ -319,6 +326,20 @@ export default function EngMaster() {
     }
   };
 
+  const handleRestartTour = () => {
+    localStorage.removeItem("eng_master_tour_completed");
+    setTourKey((prev) => prev + 1);
+    setIsSettingsModalOpen(false);
+    toast.info("Đang bắt đầu lại hướng dẫn...");
+  };
+
+  const handleExportAll = () => {
+    handleExportExcel(
+      topics,
+      `EngMaster_Backup_${new Date().toLocaleDateString("en-CA")}`,
+    );
+  };
+
   const startFlashcards = () => {
     if (vocabularies.length === 0) return;
     const queue = [...vocabularies].sort(() => 0.5 - Math.random());
@@ -430,7 +451,17 @@ export default function EngMaster() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] flex flex-col font-sans">
       <Toaster position="top-center" richColors />
-      <AppTour setActiveTab={setActiveTab} onBackToList={() => setSelectedTopic(null)} />
+      <AppTour
+        key={tourKey}
+        setActiveTab={setActiveTab}
+        onBackToList={() => setSelectedTopic(null)}
+      />
+      <CommandPalette
+        topics={topics}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onSelectTopic={setSelectedTopic}
+      />
 
       {/* Sidebar / Topnav */}
       <nav className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-2 sm:px-4 md:px-8 py-2.5 md:py-4 flex items-center justify-between shadow-sm">
@@ -458,7 +489,7 @@ export default function EngMaster() {
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
-              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${tab.id === 'topics' ? 'tour-tab-topics' : ''} ${tab.id === 'quiz' ? 'tour-tab-quiz' : ''} ${tab.id === 'dashboard' ? 'tour-tab-progress' : ''} ${
+              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${tab.id === "topics" ? "tour-tab-topics" : ""} ${tab.id === "quiz" ? "tour-tab-quiz" : ""} ${tab.id === "dashboard" ? "tour-tab-progress" : ""} ${
                 activeTab === tab.id
                   ? "bg-white text-indigo-600 shadow-[0_4px_12px_rgba(79,70,229,0.12)] border border-slate-100 scale-105"
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
@@ -476,86 +507,111 @@ export default function EngMaster() {
 
         <div className="flex items-center gap-2 md:gap-3">
           <button
-            onClick={() => setIsLogoutModalOpen(true)}
-            className="p-2 md:p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-rose-100"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="p-2 md:p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-indigo-100"
+            title="Cài đặt"
           >
-            <LogOut className="w-5 h-5 md:w-5.5 md:h-5.5" />
+            <Settings className="w-5 h-5 md:w-5.5 md:h-5.5" />
           </button>
         </div>
       </nav>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
-        {activeTab === "dashboard" && (
-          <DashboardScreen
-            userCode={userCode}
-            topics={topics}
-            currentStreak={currentStreak}
-            hasStudiedToday={hasStudiedToday}
-            displayName={displayName}
-            onUpdateDisplayName={handleUpdateDisplayName}
-          />
-        )}
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          {activeTab === "dashboard" && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <DashboardScreen
+                userCode={userCode}
+                topics={topics}
+                currentStreak={currentStreak}
+                hasStudiedToday={hasStudiedToday}
+                displayName={displayName}
+                onUpdateDisplayName={handleUpdateDisplayName}
+              />
+            </motion.div>
+          )}
 
-        {activeTab === "topics" && (
-          <>
-            {!selectedTopic ? (
-              <TopicListView
+          {activeTab === "topics" && (
+            <motion.div
+              key="topics"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {!selectedTopic ? (
+                <TopicListView
+                  topics={topics}
+                  userCode={userCode}
+                  isExporting={isExporting}
+                  isLoading={isTopicLoading}
+                  onImportSuccess={fetchTopics}
+                  setIsAddTopicModalOpen={setIsAddTopicModalOpen}
+                  setIsExportExcelModalOpen={setIsExportExcelModalOpen}
+                  onSelectTopic={setSelectedTopic}
+                />
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {viewMode === "list" ? (
+                    <>
+                      <AddVocabularyBar
+                        selectedTopic={selectedTopic}
+                        userCode={userCode}
+                        onSuccess={() => {
+                          fetchVocabularies(selectedTopic.id);
+                          fetchTopics();
+                        }}
+                        onStartFlashcards={startFlashcards}
+                        hasVocab={vocabularies.length > 0}
+                      />
+
+                      <VocabularyListView
+                        topic={selectedTopic}
+                        vocabularies={vocabularies}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        onBack={() => setSelectedTopic(null)}
+                        onDeleteTopic={handleDeleteTopic}
+                        onDeleteWord={handleDeleteWord}
+                        onEditWord={handleEditWord}
+                        isOwner={selectedTopic.user_code === userCode}
+                      />
+                    </>
+                  ) : (
+                    <FlashcardPlayer
+                      queue={flashcardQueue}
+                      onFinish={() => setViewMode("list")}
+                      onAnswer={handleFlashcardAnswer}
+                      onBack={() => setViewMode("list")}
+                    />
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "quiz" && (
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <QuizContainer
                 topics={topics}
                 userCode={userCode}
-                isExporting={isExporting}
-                onImportSuccess={fetchTopics}
-                handleExportExcel={handleExportExcel}
-                setIsAddTopicModalOpen={setIsAddTopicModalOpen}
-                setIsExportExcelModalOpen={setIsExportExcelModalOpen}
-                onSelectTopic={setSelectedTopic}
+                onQuizCompleted={handleUpdateStreak}
               />
-            ) : (
-              <div className="flex flex-col gap-6">
-                {viewMode === "list" ? (
-                  <>
-                    <AddVocabularyBar
-                      selectedTopic={selectedTopic}
-                      userCode={userCode}
-                      onSuccess={() => {
-                        fetchVocabularies(selectedTopic.id);
-                        fetchTopics();
-                      }}
-                      onStartFlashcards={startFlashcards}
-                      hasVocab={vocabularies.length > 0}
-                    />
-
-                    <VocabularyListView
-                      topic={selectedTopic}
-                      vocabularies={vocabularies}
-                      searchTerm={searchTerm}
-                      setSearchTerm={setSearchTerm}
-                      onBack={() => setSelectedTopic(null)}
-                      onDeleteTopic={handleDeleteTopic}
-                      onDeleteWord={handleDeleteWord}
-                      onEditWord={handleEditWord}
-                      isOwner={selectedTopic.user_code === userCode}
-                    />
-                  </>
-                ) : (
-                  <FlashcardPlayer
-                    queue={flashcardQueue}
-                    onFinish={() => setViewMode("list")}
-                    onAnswer={handleFlashcardAnswer}
-                    onBack={() => setViewMode("list")}
-                  />
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === "quiz" && (
-          <QuizContainer
-            topics={topics}
-            userCode={userCode}
-            onQuizCompleted={handleUpdateStreak}
-          />
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Modals */}
@@ -592,6 +648,19 @@ export default function EngMaster() {
         isOpen={isStreakCelebrationOpen}
         onClose={() => setIsStreakCelebrationOpen(false)}
         streakCount={celebrationStreakCount}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        displayName={displayName}
+        onUpdateDisplayName={handleUpdateDisplayName}
+        onLogout={() => {
+          setIsSettingsModalOpen(false);
+          setIsLogoutModalOpen(true);
+        }}
+        onRestartTour={handleRestartTour}
+        onExportData={handleExportAll}
       />
 
       {/* Logout Confirmation Modal */}

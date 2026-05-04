@@ -17,10 +17,51 @@ import {
   Bell,
   BellRing,
   CheckCircle2,
+  BarChart3,
+  PieChart as PieChartIcon,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { supabase } from "@/lib/supabase";
 import { Topic, LeaderboardUser } from "@/lib/types";
 import { maskUserCode } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- SKELETON COMPONENTS ---
+const StatCardSkeleton = () => (
+  <div className="bg-white rounded-[2rem] p-6 border-2 border-slate-100 shadow-sm relative overflow-hidden">
+    <div className="flex items-center gap-2 mb-3">
+      <div className="p-2 bg-slate-50 rounded-lg w-9 h-9 skeleton"></div>
+      <div className="h-4 w-20 skeleton rounded"></div>
+    </div>
+    <div className="h-10 w-12 skeleton rounded mb-2"></div>
+    <div className="h-4 w-16 skeleton rounded-md"></div>
+  </div>
+);
+
+const LeaderboardRowSkeleton = () => (
+  <div className="flex items-center px-4 py-4 md:px-7 md:py-6 rounded-3xl border border-transparent bg-white">
+    <div className="w-16 flex justify-center">
+      <div className="w-10 h-10 rounded-2xl skeleton"></div>
+    </div>
+    <div className="ml-4 md:ml-8 flex-1">
+      <div className="h-6 w-32 skeleton rounded mb-2"></div>
+      <div className="h-4 w-20 skeleton rounded"></div>
+    </div>
+    <div className="w-24 h-16 rounded-2xl skeleton"></div>
+  </div>
+);
 
 interface DashboardScreenProps {
   userCode: string;
@@ -39,6 +80,26 @@ export default function DashboardScreen({
   displayName,
   onUpdateDisplayName,
 }: DashboardScreenProps) {
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  } as const;
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring" as const, stiffness: 100 },
+    },
+  } as const;
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(displayName);
   const [isSavingName, setIsSavingName] = useState(false);
@@ -121,6 +182,7 @@ export default function DashboardScreen({
     level3: 0,
     level4: 0,
     total: 0,
+    chartData: [] as { name: string; count: number }[],
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
@@ -144,6 +206,7 @@ export default function DashboardScreen({
   // Fetch individual stats (Optimized)
   useEffect(() => {
     const fetchVocabStats = async () => {
+      setIsLoadingStats(true); // Ensure it shows loading when topics change
       try {
         const topicIds = topics.map((t) => t.id);
         if (topicIds.length === 0) {
@@ -153,22 +216,43 @@ export default function DashboardScreen({
 
         const { data, error } = await supabase
           .from("vocabularies")
-          .select("review_interval")
+          .select("review_interval, created_at")
           .in("topic_id", topicIds);
 
         if (error) throw error;
 
-        let l1 = 0,
-          l2 = 0,
-          l3 = 0,
-          l4 = 0;
+        // Process Mastery Levels
+        let l1 = 0, l2 = 0, l3 = 0, l4 = 0;
+        const addedByDate: Record<string, number> = {};
+        
+        // Last 7 days for chart
+        const last7Days = [...Array(7)].map((_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          return d.toISOString().split('T')[0];
+        }).reverse();
+
+        last7Days.forEach(day => addedByDate[day] = 0);
+
         data?.forEach((v) => {
+          // Mastery levels
           const iv = v.review_interval || 0;
           if (iv === 0) l1++;
           else if (iv <= 3) l2++;
           else if (iv < 30) l3++;
           else l4++;
+
+          // Activity by date
+          const date = v.created_at?.split('T')[0];
+          if (addedByDate[date] !== undefined) {
+            addedByDate[date]++;
+          }
         });
+
+        const chartData = last7Days.map(day => ({
+          name: new Date(day).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric' }),
+          count: addedByDate[day]
+        }));
 
         setStats({
           level1: l1,
@@ -176,6 +260,7 @@ export default function DashboardScreen({
           level3: l3,
           level4: l4,
           total: data?.length || 0,
+          chartData
         });
       } catch (e) {
         console.error("Lỗi fetch stats", e);
@@ -265,9 +350,17 @@ export default function DashboardScreen({
   }, [lbTab]);
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-8 mt-2">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="flex flex-col gap-8 pb-8 mt-2"
+    >
       {/* 1. Chỉ số cá nhân */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 relative overflow-hidden">
+      <motion.div
+        variants={itemVariants}
+        className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 relative overflow-hidden"
+      >
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50 z-0 pointer-events-none"></div>
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -342,8 +435,11 @@ export default function DashboardScreen({
           </div>
 
           {isLoadingStats ? (
-            <div className="py-12 flex justify-center">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
             </div>
           ) : stats.total === 0 ? (
             <div className="py-12 text-center text-slate-400 bg-slate-50/50 rounded-2xl border border-slate-100 border-dashed">
@@ -436,11 +532,102 @@ export default function DashboardScreen({
               </div>
             </div>
           )}
+
+          {/* Charts Section */}
+          {!isLoadingStats && stats.total > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+              {/* Activity Chart */}
+              <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
+                <div className="flex items-center gap-2 mb-6">
+                  <BarChart3 className="text-indigo-500" size={20} />
+                  <h3 className="font-bold text-slate-800">Từ vựng mới (7 ngày qua)</h3>
+                </div>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                        dy={10}
+                      />
+                      <YAxis hide />
+                      <Tooltip 
+                        cursor={{ fill: '#f1f5f9' }}
+                        contentStyle={{ 
+                          borderRadius: '16px', 
+                          border: 'none', 
+                          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                          fontWeight: '700'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        fill="#6366f1" 
+                        radius={[6, 6, 0, 0]} 
+                        barSize={32}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Mastery Distribution Chart */}
+              <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
+                <div className="flex items-center gap-2 mb-6">
+                  <PieChartIcon className="text-emerald-500" size={20} />
+                  <h3 className="font-bold text-slate-800">Tỷ lệ ghi nhớ</h3>
+                </div>
+                <div className="h-[250px] w-full flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Vừa gieo', value: stats.level1, color: '#94a3b8' },
+                          { name: 'Lên chồi', value: stats.level2, color: '#10b981' },
+                          { name: 'Bám rễ', value: stats.level3, color: '#22c55e' },
+                          { name: 'Thuộc làu', value: stats.level4, color: '#f59e0b' },
+                        ]}
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Vừa gieo', value: stats.level1, color: '#94a3b8' },
+                          { name: 'Lên chồi', value: stats.level2, color: '#10b981' },
+                          { name: 'Bám rễ', value: stats.level3, color: '#22c55e' },
+                          { name: 'Thuộc làu', value: stats.level4, color: '#f59e0b' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                      />
+                      <Legend 
+                        verticalAlign="middle" 
+                        align="right" 
+                        layout="vertical"
+                        iconType="circle"
+                        formatter={(value) => <span className="text-xs font-bold text-slate-600">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </motion.div>
 
       {/* 1.5. Notification Banner */}
-      <div className="tour-notif-banner bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl shadow-indigo-200/50 border border-indigo-500/20 p-6 md:p-8 relative overflow-hidden">
+      <motion.div
+        variants={itemVariants}
+        className="tour-notif-banner bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl shadow-indigo-200/50 border border-indigo-500/20 p-6 md:p-8 relative overflow-hidden"
+      >
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none"></div>
@@ -507,9 +694,9 @@ export default function DashboardScreen({
 
                     const res = await fetch(
                       `/api/notifications/daily?secret=engmaster_secret_lhg_push${targetParam}`,
-                      { 
+                      {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" }
+                        headers: { "Content-Type": "application/json" },
                       },
                     );
                     const data = await res.json();
@@ -549,10 +736,13 @@ export default function DashboardScreen({
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* 2. Leaderboard Section */}
-      <div className="tour-leaderboard bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+      <motion.div
+        variants={itemVariants}
+        className="tour-leaderboard bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative"
+      >
         {/* Header with Tabs */}
         <div
           className={`p-6 md:p-8 border-b border-slate-100 transition-colors duration-500 ${
@@ -620,19 +810,12 @@ export default function DashboardScreen({
         </div>
 
         {isLoadingLeaderboard ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-4">
-            <Loader2
-              className={`w-12 h-12 animate-spin ${
-                lbTab === "streak"
-                  ? "text-orange-400"
-                  : lbTab === "mastery"
-                    ? "text-emerald-400"
-                    : "text-indigo-400"
-              }`}
-            />
-            <p className="text-slate-400 font-bold animate-pulse tracking-wide uppercase text-xs">
-              Đang nạp bảng xếp hạng...
-            </p>
+          <div className="divide-y divide-slate-50 bg-slate-50/30 p-4 md:p-8">
+            <div className="max-w-4xl mx-auto flex flex-col gap-3">
+              {[...Array(5)].map((_, i) => (
+                <LeaderboardRowSkeleton key={i} />
+              ))}
+            </div>
           </div>
         ) : leaderboard.length === 0 ? (
           <div className="py-24 text-center text-slate-400 bg-slate-50/20 italic">
@@ -745,7 +928,7 @@ export default function DashboardScreen({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

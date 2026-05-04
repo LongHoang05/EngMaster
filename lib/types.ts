@@ -20,6 +20,8 @@ export interface Vocabulary {
   created_at: string;
   review_interval?: number;
   next_review_date?: string;
+  word_type?: "noun" | "verb" | "adj" | "adv" | "phrase" | "other";
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 export interface DictSuggestion {
@@ -29,6 +31,7 @@ export interface DictSuggestion {
   definition: string;
   example?: string;
   audioUrl?: string;
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 export interface AutocompleteWord {

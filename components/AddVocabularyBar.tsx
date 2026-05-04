@@ -98,6 +98,7 @@ export default function AddVocabularyBar({
           audioUrl: item.phonetics?.find(
             (p: { audio: string }) => p.audio && p.audio.length > 0
           )?.audio,
+          difficulty: "medium",
         });
       } else {
         toast.error("Không tìm thấy từ này trong từ điển.");
@@ -120,6 +121,8 @@ export default function AddVocabularyBar({
         ipa: dictInfo.ipa,
         meanings: [dictInfo.definition],
         notes: dictInfo.example || "",
+        word_type: dictInfo.partOfSpeech || "noun",
+        difficulty: dictInfo.difficulty || "medium",
       });
 
       if (error) throw error;
@@ -258,6 +261,46 @@ export default function AddVocabularyBar({
                         >
                           <Volume2 size={20} />
                         </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Loại từ</label>
+                        <select 
+                          value={dictInfo.partOfSpeech || "noun"}
+                          onChange={(e) => setDictInfo({...dictInfo, partOfSpeech: e.target.value})}
+                          className="block w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                        >
+                          <option value="noun">Danh từ</option>
+                          <option value="verb">Động từ</option>
+                          <option value="adj">Tính từ</option>
+                          <option value="adv">Trạng từ</option>
+                          <option value="phrase">Cụm từ</option>
+                          <option value="other">Khác</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Độ khó</label>
+                        <div className="flex gap-2">
+                          {(["easy", "medium", "hard"] as const).map((d) => (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => setDictInfo({...dictInfo, difficulty: d})}
+                              className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                                (dictInfo.difficulty || "medium") === d
+                                  ? d === "easy" ? "bg-emerald-500 border-emerald-500 text-white" :
+                                    d === "medium" ? "bg-indigo-500 border-indigo-500 text-white" :
+                                    "bg-rose-500 border-rose-500 text-white"
+                                  : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                              }`}
+                            >
+                              {d === "easy" ? "Dễ" : d === "medium" ? "Vừa" : "Khó"}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 

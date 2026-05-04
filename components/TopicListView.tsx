@@ -16,8 +16,8 @@ interface TopicListViewProps {
   topics: Topic[];
   userCode: string;
   isExporting: boolean;
+  isLoading?: boolean;
   onImportSuccess: () => void;
-  handleExportExcel: (topics: Topic[], name: string) => void;
   setIsAddTopicModalOpen: (open: boolean) => void;
   setIsExportExcelModalOpen: (open: boolean) => void;
   onSelectTopic: (topic: Topic) => void;
@@ -27,8 +27,8 @@ export default function TopicListView({
   topics,
   userCode,
   isExporting,
+  isLoading,
   onImportSuccess,
-  handleExportExcel,
   setIsAddTopicModalOpen,
   setIsExportExcelModalOpen,
   onSelectTopic,
@@ -42,7 +42,7 @@ export default function TopicListView({
       acc[cat].push(topic);
       return acc;
     },
-    {} as Record<string, Topic[]>
+    {} as Record<string, Topic[]>,
   );
 
   if (!groupedTopics["Từ vựng cá nhân"]) {
@@ -70,25 +70,28 @@ export default function TopicListView({
           </p>
         </div>
         <div className="tour-action-buttons w-full sm:w-auto flex flex-wrap gap-2">
-            <ImportExcelButton userCode={userCode} onImportSuccess={onImportSuccess} />
-            <button
-              onClick={() => setIsExportExcelModalOpen(true)}
-              disabled={isExporting}
-              className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-emerald-200 disabled:opacity-50 whitespace-nowrap"
-            >
-              {isExporting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <FileSpreadsheet size={16} />
-              )}
-              Xuất Excel
-            </button>
-            <button
-              onClick={() => setIsAddTopicModalOpen(true)}
-              className="tour-step-add-topic inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-indigo-200 whitespace-nowrap"
-            >
-              <Plus size={16} /> Thêm chủ đề
-            </button>
+          <ImportExcelButton
+            userCode={userCode}
+            onImportSuccess={onImportSuccess}
+          />
+          <button
+            onClick={() => setIsExportExcelModalOpen(true)}
+            disabled={isExporting}
+            className="inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-emerald-200 disabled:opacity-50 whitespace-nowrap"
+          >
+            {isExporting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <FileSpreadsheet size={16} />
+            )}
+            Xuất Excel
+          </button>
+          <button
+            onClick={() => setIsAddTopicModalOpen(true)}
+            className="tour-step-add-topic inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-indigo-200 whitespace-nowrap"
+          >
+            <Plus size={16} /> Thêm chủ đề
+          </button>
         </div>
       </div>
 
@@ -103,7 +106,22 @@ export default function TopicListView({
                 <div className="h-px flex-1 bg-slate-200/60"></div>
               </div>
 
-              {groupedTopics[catName].length === 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                    >
+                      <div className="w-12 h-12 rounded-xl skeleton flex-shrink-0"></div>
+                      <div className="ml-4 flex-1">
+                        <div className="h-5 w-32 skeleton rounded mb-2"></div>
+                        <div className="h-4 w-24 skeleton rounded"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : groupedTopics[catName].length === 0 ? (
                 <div className="py-6 text-center text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-200 italic font-medium">
                   Chưa có chủ đề nào.
                 </div>
@@ -113,7 +131,7 @@ export default function TopicListView({
                     <button
                       key={topic.id}
                       onClick={() => onSelectTopic(topic)}
-                      className={`group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden ${index === 0 && catName === sortedCategories[0] ? 'tour-topic-item' : ''}`}
+                      className={`group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden ${index === 0 && catName === sortedCategories[0] ? "tour-topic-item" : ""}`}
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full blur-2xl -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -129,7 +147,11 @@ export default function TopicListView({
                             <BookOpen size={12} /> {topic.vocab_count || 0} từ
                           </span>
                           <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                          <span>{new Date(topic.created_at).toLocaleDateString("vi-VN")}</span>
+                          <span>
+                            {new Date(topic.created_at).toLocaleDateString(
+                              "vi-VN",
+                            )}
+                          </span>
                         </div>
                       </div>
                       <div className="ml-2 w-8 h-8 rounded-full border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all">

@@ -23,6 +23,8 @@ export default function EditVocabularyModal({
   const [ipa, setIpa] = useState("");
   const [meanings, setMeanings] = useState("");
   const [notes, setNotes] = useState("");
+  const [wordType, setWordType] = useState<string>("noun");
+  const [difficulty, setDifficulty] = useState<string>("medium");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,8 @@ export default function EditVocabularyModal({
           : wordData.meanings || ""
       );
       setNotes(wordData.notes || "");
+      setWordType(wordData.word_type || "noun");
+      setDifficulty(wordData.difficulty || "medium");
     }
   }, [wordData]);
 
@@ -62,6 +66,8 @@ export default function EditVocabularyModal({
           ipa: ipa.trim(),
           meanings: meaningsArray,
           notes: notes.trim(),
+          word_type: wordType,
+          difficulty: difficulty,
         })
         .eq("id", wordData.id);
 
@@ -145,6 +151,48 @@ export default function EditVocabularyModal({
                 className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl text-slate-600 outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner resize-none font-medium text-sm"
                 placeholder="Thêm ngữ cảnh hoặc ví dụ..."
               />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                Loại từ
+              </label>
+              <select 
+                value={wordType}
+                onChange={(e) => setWordType(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner"
+              >
+                <option value="noun">Danh từ</option>
+                <option value="verb">Động từ</option>
+                <option value="adj">Tính từ</option>
+                <option value="adv">Trạng từ</option>
+                <option value="phrase">Cụm từ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                Độ khó
+              </label>
+              <div className="flex gap-2">
+                {(["easy", "medium", "hard"] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                      difficulty === d
+                        ? d === "easy" ? "bg-emerald-500 border-emerald-500 text-white" :
+                          d === "medium" ? "bg-indigo-500 border-indigo-500 text-white" :
+                          "bg-rose-500 border-rose-500 text-white"
+                        : "bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200"
+                    }`}
+                  >
+                    {d === "easy" ? "Dễ" : d === "medium" ? "Vừa" : "Khó"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

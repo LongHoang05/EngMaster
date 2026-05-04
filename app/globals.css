@@ -3,11 +3,25 @@
 :root {
   --background: #f8fafc;
   --foreground: #1e293b;
+  --card-bg: #ffffff;
+  --card-border: #f1f5f9;
+  --secondary-bg: #f1f5f9;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --card-bg: #0f172a;
+  --card-border: #1e293b;
+  --secondary-bg: #1e293b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card-bg);
+  --color-border-custom: var(--card-border);
+  --color-secondary-custom: var(--secondary-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,6 +30,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ============================================
@@ -45,6 +60,33 @@ body {
 }
 .hide-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* ============================================
+   UTILITY: Skeleton Loading
+   ============================================ */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e2e8f0 50%,
+    #f1f5f9 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ============================================
