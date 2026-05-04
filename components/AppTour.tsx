@@ -283,7 +283,6 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
       run={run}
       stepIndex={stepIndex}
       continuous
-      showSkipButton={true}
       onEvent={handleJoyrideCallback}
       options={{
         primaryColor: '#4f46e5',
@@ -295,6 +294,7 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
         zIndex: 10000,
         textColor: '#1e293b',
         backgroundColor: '#ffffff',
+        buttons: ['back', 'skip', 'primary'],
       }}
       styles={{
         tooltip: {
