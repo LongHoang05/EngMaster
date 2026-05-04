@@ -134,20 +134,18 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
             await new Promise(resolve => setTimeout(resolve, 300)); // Thêm buffer time cho animation của re-render
             await waitForElement('.tour-notif-banner');
           } else if (index === 9) {
-            // Tạm mở khóa cuộn để scrollIntoView hoạt động được
+            // Mở khóa cuộn và GIỮ mở để Joyride có thể tự định vị tooltip ở bước cuối
             document.body.style.overflow = "unset";
             const leaderboard = await waitForElement('.tour-leaderboard-target');
             leaderboard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await new Promise(resolve => setTimeout(resolve, 500));
-            document.body.style.overflow = "hidden"; // Khóa lại sau khi cuộn xong
+            await new Promise(resolve => setTimeout(resolve, 600));
           }
         } else if (action === ACTIONS.PREV) {
           if (index === 10) {
-            // Tạm mở khóa cuộn để scrollIntoView hoạt động được
-            document.body.style.overflow = "unset";
+            // Cuộn ngược lên thanh Thông báo rồi khóa lại scroll
             const notif = await waitForElement('.tour-notif-banner');
             notif.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 600));
             document.body.style.overflow = "hidden";
           } else if (index === 9) {
             setActiveTab("quiz");
