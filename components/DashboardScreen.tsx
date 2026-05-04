@@ -745,7 +745,7 @@ export default function DashboardScreen({
       >
         {/* Header with Tabs */}
         <div
-          className={`p-6 md:p-8 border-b border-slate-100 transition-colors duration-500 ${
+          className={`tour-leaderboard-target p-6 md:p-8 border-b border-slate-100 transition-colors duration-500 ${
             lbTab === "streak"
               ? "bg-gradient-to-r from-orange-50 to-amber-50"
               : lbTab === "mastery"

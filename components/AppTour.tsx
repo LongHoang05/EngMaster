@@ -267,9 +267,9 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
       skipScroll: false,
     },
     {
-      target: ".tour-leaderboard",
+      target: ".tour-leaderboard-target",
       content: "Cuối cùng, theo dõi thống kê trí nhớ và vị trí của bạn trên Bảng vàng thi đua tại đây. Chúc bạn học tốt!",
-      placement: "top",
+      placement: "bottom",
       skipBeacon: true,
       skipScroll: false,
     }
