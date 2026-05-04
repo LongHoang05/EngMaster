@@ -355,6 +355,7 @@ export default function DashboardScreen({
       animate="visible"
       variants={containerVariants}
       className="flex flex-col gap-8 pb-8 mt-2"
+      data-stats-loaded={!isLoadingStats}
     >
       {/* 1. Chỉ số cá nhân */}
       <motion.div

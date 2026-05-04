@@ -129,6 +129,9 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
             await waitForElement('.tour-quiz-method-select');
           } else if (index === 8) {
             setActiveTab("dashboard");
+            // Đợi Dashboard load xong dữ liệu biểu đồ để tránh Layout Shift làm sai lệch vị trí của target
+            await waitForElement('[data-stats-loaded="true"]');
+            await new Promise(resolve => setTimeout(resolve, 300)); // Thêm buffer time cho animation của re-render
             await waitForElement('.tour-notif-banner');
           }
         } else if (action === ACTIONS.PREV) {
