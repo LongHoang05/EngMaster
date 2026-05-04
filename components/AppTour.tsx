@@ -182,6 +182,11 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
           }
         }
         
+        // Đảm bảo target của bước tiếp theo luôn tồn tại trước khi set stepIndex
+        if (nextStepIndex >= 0 && nextStepIndex < steps.length) {
+          await waitForElement(steps[nextStepIndex].target as string);
+        }
+        
         setStepIndex(nextStepIndex);
       } catch (err) {
         console.error("Tour transition error:", err);
