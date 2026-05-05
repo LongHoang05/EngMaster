@@ -6,7 +6,7 @@ import { Step, EventData, STATUS, ACTIONS, EVENTS } from "react-joyride";
 
 const Joyride = dynamic(
   () => import("react-joyride").then((mod) => mod.Joyride),
-  { ssr: false }
+  { ssr: false },
 );
 
 interface AppTourProps {
@@ -15,10 +15,16 @@ interface AppTourProps {
   onBackToList?: () => void;
 }
 
-export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }: AppTourProps) {
+export default function AppTour({
+  setActiveTab,
+  onOpenFirstTopic,
+  onBackToList,
+}: AppTourProps) {
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const isTransitioning = useRef(false);
+  // Theo dõi xem chủ đề được mở trong tour có phải của user không (hệ thống = readOnly)
+  const isSystemTopic = useRef(false);
 
   // Khóa cuộn trang khi tour đang chạy
   useEffect(() => {
@@ -43,7 +49,10 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
   }, []);
 
   // Polling utility để chờ DOM element xuất hiện, an toàn và ổn định hơn setTimeout
-  const waitForElement = (selector: string, timeout = 8000): Promise<HTMLElement> => {
+  const waitForElement = (
+    selector: string,
+    timeout = 8000,
+  ): Promise<HTMLElement> => {
     return new Promise((resolve, reject) => {
       const check = () => document.querySelector(selector) as HTMLElement;
       const initial = check();
@@ -82,7 +91,7 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
 
     // Chỉ xử lý khi bước hoàn thành (người dùng nhấn nút)
     if (type === EVENTS.STEP_AFTER) {
-      const nextStepIndex = index + (action === ACTIONS.PREV ? -1 : 1);
+      let nextStepIndex = index + (action === ACTIONS.PREV ? -1 : 1);
 
       if (isTransitioning.current) return;
       isTransitioning.current = true;
@@ -91,117 +100,159 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
         if (action === ACTIONS.NEXT) {
           if (index === 0) {
             setActiveTab("topics");
-            await waitForElement('.tour-action-buttons');
+            await waitForElement(".tour-action-buttons");
           } else if (index === 2) {
             if (onOpenFirstTopic) onOpenFirstTopic();
             else {
-              const el = await waitForElement('.tour-topic-item');
+              const el = await waitForElement(".tour-topic-item");
               el.click();
             }
-            await waitForElement('.tour-flashcard-btn');
+            await waitForElement(".tour-flashcard-btn");
+            // Kiểm tra xem chủ đề vừa mở có phải hệ thống không (input readOnly)
+            try {
+              const input = (await waitForElement(
+                ".tour-add-vocab-input",
+                2000,
+              )) as HTMLInputElement;
+              isSystemTopic.current = input.readOnly;
+            } catch {
+              isSystemTopic.current = false;
+            }
           } else if (index === 3) {
-            const el = await waitForElement('.tour-flashcard-btn');
+            const el = await waitForElement(".tour-flashcard-btn");
             el.click();
-            await waitForElement('.tour-flashcard-play-area');
+            await waitForElement(".tour-flashcard-play-area");
           } else if (index === 4) {
-            const el = await waitForElement('.tour-flashcard-back-btn');
+            const el = await waitForElement(".tour-flashcard-back-btn");
             el.click();
-            await waitForElement('.tour-add-vocab-input');
+            await waitForElement(".tour-add-vocab-input");
+            // Nếu là chủ đề hệ thống, bỏ qua bước thêm từ/tra từ điển → nhảy thẳng đến quiz
+            if (isSystemTopic.current) {
+              if (onBackToList) onBackToList();
+              setActiveTab("quiz");
+              await waitForElement(".tour-tab-quiz");
+              nextStepIndex = 7; // Nhảy đến bước Quiz tab
+            }
           } else if (index === 5) {
-            const input = await waitForElement('.tour-add-vocab-input') as HTMLInputElement;
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-            setter?.call(input, 'phenomenon');
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            const suggestion = await waitForElement('.tour-suggestion-item');
+            const input = (await waitForElement(
+              ".tour-add-vocab-input",
+            )) as HTMLInputElement;
+            const setter = Object.getOwnPropertyDescriptor(
+              window.HTMLInputElement.prototype,
+              "value",
+            )?.set;
+            setter?.call(input, "phenomenon");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+
+            const suggestion = await waitForElement(".tour-suggestion-item");
             suggestion.click();
-            await waitForElement('.tour-dict-result');
+            await waitForElement(".tour-dict-result");
           } else if (index === 6) {
-            const el = await waitForElement('.tour-dict-close-btn');
+            const el = await waitForElement(".tour-dict-close-btn");
             el.click();
             setActiveTab("quiz");
-            await waitForElement('.tour-tab-quiz');
+            await waitForElement(".tour-tab-quiz");
           } else if (index === 7) {
-            const topic = await waitForElement('.tour-quiz-topic-item');
+            const topic = await waitForElement(".tour-quiz-topic-item");
             topic.click();
-            const btn = await waitForElement('.tour-quiz-continue-btn:not([disabled])');
+            const btn = await waitForElement(
+              ".tour-quiz-continue-btn:not([disabled])",
+            );
             btn.click();
-            await waitForElement('.tour-quiz-method-select');
+            await waitForElement(".tour-quiz-method-select");
           } else if (index === 8) {
             setActiveTab("dashboard");
             // Đợi Dashboard load xong dữ liệu biểu đồ để tránh Layout Shift làm sai lệch vị trí của target
             await waitForElement('[data-stats-loaded="true"]');
-            await new Promise(resolve => setTimeout(resolve, 300)); // Thêm buffer time cho animation của re-render
-            await waitForElement('.tour-notif-banner');
+            await new Promise((resolve) => setTimeout(resolve, 300)); // Thêm buffer time cho animation của re-render
+            await waitForElement(".tour-notif-banner");
           } else if (index === 9) {
-            // Mở khóa cuộn và GIỮ mở để Joyride có thể tự định vị tooltip ở bước cuối
+            // Mở khóa cuộn và GIỮ mở để Joyride có thể định vị tooltip
             document.body.style.overflow = "unset";
-            const leaderboard = await waitForElement('.tour-leaderboard-target');
-            leaderboard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await new Promise(resolve => setTimeout(resolve, 600));
+            // Chỉ cần cuộn xuống một chút vì Bảng vàng nằm ngay bên dưới
+            window.scrollBy({ top: 100, behavior: "smooth" });
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
         } else if (action === ACTIONS.PREV) {
           if (index === 10) {
             // Cuộn ngược lên thanh Thông báo rồi khóa lại scroll
-            const notif = await waitForElement('.tour-notif-banner');
-            notif.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await new Promise(resolve => setTimeout(resolve, 600));
+            const notif = await waitForElement(".tour-notif-banner");
+            notif.scrollIntoView({ behavior: "smooth", block: "center" });
+            await new Promise((resolve) => setTimeout(resolve, 600));
             document.body.style.overflow = "hidden";
           } else if (index === 9) {
             setActiveTab("quiz");
             try {
-              await waitForElement('.tour-quiz-method-select', 500);
+              await waitForElement(".tour-quiz-method-select", 500);
             } catch {
-              const topic = await waitForElement('.tour-quiz-topic-item');
+              const topic = await waitForElement(".tour-quiz-topic-item");
               topic.click();
-              const btn = await waitForElement('.tour-quiz-continue-btn:not([disabled])');
+              const btn = await waitForElement(
+                ".tour-quiz-continue-btn:not([disabled])",
+              );
               btn.click();
-              await waitForElement('.tour-quiz-method-select');
+              await waitForElement(".tour-quiz-method-select");
             }
           } else if (index === 8) {
-            const el = await waitForElement('.tour-quiz-back-btn');
+            const el = await waitForElement(".tour-quiz-back-btn");
             el.click();
-            await waitForElement('.tour-quiz-topic-item');
+            await waitForElement(".tour-quiz-topic-item");
           } else if (index === 7) {
             setActiveTab("topics");
-            const el = await waitForElement('.tour-topic-item');
-            el.click();
-            
-            const input = await waitForElement('.tour-add-vocab-input') as HTMLInputElement;
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-            setter?.call(input, 'phenomenon');
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            const suggestion = await waitForElement('.tour-suggestion-item');
-            suggestion.click();
-            await waitForElement('.tour-dict-result');
+            // Nếu là chủ đề hệ thống, quay lại bước flashcard thay vì dictionary
+            if (isSystemTopic.current) {
+              const el = await waitForElement(".tour-topic-item");
+              el.click();
+              await waitForElement(".tour-flashcard-btn");
+              const flashBtn = await waitForElement(".tour-flashcard-btn");
+              flashBtn.click();
+              await waitForElement(".tour-flashcard-play-area");
+              nextStepIndex = 4; // Quay về bước flashcard play area
+            } else {
+              const el = await waitForElement(".tour-topic-item");
+              el.click();
+
+              const input = (await waitForElement(
+                ".tour-add-vocab-input",
+              )) as HTMLInputElement;
+              const setter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                "value",
+              )?.set;
+              setter?.call(input, "phenomenon");
+              input.dispatchEvent(new Event("input", { bubbles: true }));
+
+              const suggestion = await waitForElement(".tour-suggestion-item");
+              suggestion.click();
+              await waitForElement(".tour-dict-result");
+            }
           } else if (index === 6) {
-            const el = await waitForElement('.tour-dict-close-btn');
+            const el = await waitForElement(".tour-dict-close-btn");
             el.click();
-            await waitForElement('.tour-add-vocab-input');
+            await waitForElement(".tour-add-vocab-input");
           } else if (index === 5) {
-            const el = await waitForElement('.tour-flashcard-btn');
+            const el = await waitForElement(".tour-flashcard-btn");
             el.click();
-            await waitForElement('.tour-flashcard-play-area');
+            await waitForElement(".tour-flashcard-play-area");
           } else if (index === 4) {
-            const el = await waitForElement('.tour-flashcard-back-btn');
+            const el = await waitForElement(".tour-flashcard-back-btn");
             el.click();
-            await waitForElement('.tour-flashcard-btn');
+            await waitForElement(".tour-flashcard-btn");
           } else if (index === 3) {
             if (onBackToList) onBackToList();
             else {
-              const el = await waitForElement('.tour-topic-back-btn');
+              const el = await waitForElement(".tour-topic-back-btn");
               if (el) el.click();
             }
-            await waitForElement('.tour-topic-item');
+            await waitForElement(".tour-topic-item");
           }
         }
-        
+
         // Đảm bảo target của bước tiếp theo luôn tồn tại trước khi set stepIndex
         if (nextStepIndex >= 0 && nextStepIndex < steps.length) {
           await waitForElement(steps[nextStepIndex].target as string);
         }
-        
+
         setStepIndex(nextStepIndex);
       } catch (err) {
         console.error("Tour transition error:", err);
@@ -216,20 +267,23 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
   const steps: Step[] = [
     {
       target: ".tour-tab-topics",
-      content: "Đây là tab Tài liệu, nơi lưu trữ và quản lý toàn bộ chủ đề từ vựng của bạn.",
+      content:
+        "Đây là tab Tài liệu, nơi lưu trữ và quản lý toàn bộ chủ đề từ vựng của bạn.",
       placement: "bottom",
       skipBeacon: true,
     },
     {
       target: ".tour-action-buttons",
-      content: "Tại đây, bạn có thể tạo chủ đề mới thủ công, hoặc nhập/xuất từ vựng hàng loạt cực kỳ nhanh chóng bằng file Excel.",
+      content:
+        "Tại đây, bạn có thể tạo chủ đề mới thủ công, hoặc nhập/xuất từ vựng hàng loạt cực kỳ nhanh chóng bằng file Excel.",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
     },
     {
       target: ".tour-topic-item",
-      content: "Hãy nhấp vào một chủ đề bất kỳ để xem danh sách từ vựng chi tiết và thêm từ mới.",
+      content:
+        "Hãy nhấp vào một chủ đề bất kỳ để xem danh sách từ vựng chi tiết và thêm từ mới.",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
@@ -242,107 +296,116 @@ export default function AppTour({ setActiveTab, onOpenFirstTopic, onBackToList }
     },
     {
       target: ".tour-flashcard-play-area",
-      content: "Đây là khu vực học Flashcard! Các từ vựng sẽ hiển thị dưới dạng thẻ lật. Bạn có thể vuốt thẻ hoặc bấm nút để tự kiểm tra trí nhớ. Hệ thống áp dụng Lặp lại ngắt quãng (Spaced Repetition) để tự động tính toán thời gian ôn tập tối ưu cho từng từ.",
+      content:
+        "Đây là khu vực học Flashcard! Các từ vựng sẽ hiển thị dưới dạng thẻ lật. Bạn có thể vuốt thẻ hoặc bấm nút để tự kiểm tra trí nhớ. Hệ thống áp dụng Lặp lại ngắt quãng (Spaced Repetition) để tự động tính toán thời gian ôn tập tối ưu cho từng từ.",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
     },
     {
       target: ".tour-add-vocab-input",
-      content: "Để Thêm từ mới vào chủ đề, bạn chỉ cần gõ tiếng Anh vào đây và nhấn Enter.",
+      content:
+        "Để Thêm từ mới vào chủ đề, bạn chỉ cần gõ tiếng Anh vào đây và nhấn Enter.",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
     },
     {
       target: ".tour-dict-result",
-      content: "Kết quả tra cứu sẽ hiện ra ngay lập tức kèm theo phát âm chuẩn, từ loại, định nghĩa tiếng Việt và ví dụ. Rất tiện lợi đúng không nào?",
+      content:
+        "Kết quả tra cứu sẽ hiện ra ngay lập tức kèm theo phát âm chuẩn, từ loại, định nghĩa tiếng Việt và ví dụ. Rất tiện lợi đúng không nào?",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
     },
     {
       target: ".tour-tab-quiz",
-      content: "Sau khi học xong, hãy vào tab Kiểm tra mỗi ngày để làm bài test và duy trì chuỗi học (streak) bùng cháy nhé!",
+      content:
+        "Sau khi học xong, hãy vào tab Kiểm tra mỗi ngày để làm bài test và duy trì chuỗi học (streak) bùng cháy nhé!",
       placement: "bottom",
       skipBeacon: true,
     },
     {
       target: ".tour-quiz-method-select",
-      content: "Tại đây bạn có thể cấu hình phương thức kiểm tra như Trắc nghiệm, Gõ từ, hoặc Luyện nghe. Đa dạng hình thức giúp bạn phát triển toàn diện các kỹ năng!",
+      content:
+        "Tại đây bạn có thể cấu hình phương thức kiểm tra như Trắc nghiệm, Gõ từ, hoặc Luyện nghe. Đa dạng hình thức giúp bạn phát triển toàn diện các kỹ năng!",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: true,
     },
     {
       target: ".tour-notif-banner",
-      content: "Mẹo nhỏ: Hãy bật thông báo để nhận câu hỏi ôn tập tự động mỗi tiếng. Đây là cách tốt nhất để biến việc học thành thói quen mà không cần nỗ lực!",
+      content:
+        "Mẹo nhỏ: Hãy bật thông báo để nhận câu hỏi ôn tập tự động mỗi tiếng. Đây là cách tốt nhất để biến việc học thành thói quen mà không cần nỗ lực!",
       placement: "bottom",
       skipBeacon: true,
       skipScroll: false,
     },
     {
       target: ".tour-leaderboard-target",
-      content: "Cuối cùng, theo dõi thống kê trí nhớ và vị trí của bạn trên Bảng vàng thi đua tại đây. Chúc bạn học tốt!",
-      placement: "bottom",
+      content:
+        "Cuối cùng, theo dõi thống kê trí nhớ và vị trí của bạn trên Bảng vàng thi đua tại đây. Chúc bạn học tốt!",
+      placement: "top",
       skipBeacon: true,
-      skipScroll: false,
-    }
+      skipScroll: true,
+    },
   ];
 
   if (!run) return null;
 
+  const JoyrideAny = Joyride as any;
+
   return (
-    <Joyride
+    <JoyrideAny
       steps={steps}
       run={run}
       stepIndex={stepIndex}
       continuous
       onEvent={handleJoyrideCallback}
       options={{
-        primaryColor: '#4f46e5',
-        overlayColor: 'rgba(0, 0, 0, 0.7)',
+        primaryColor: "#4f46e5",
+        overlayColor: "rgba(0, 0, 0, 0.7)",
         overlayClickAction: false,
         blockTargetInteraction: true,
         showProgress: true,
         scrollOffset: 150,
         zIndex: 10000,
-        textColor: '#1e293b',
-        backgroundColor: '#ffffff',
-        buttons: ['back', 'skip', 'primary'],
+        textColor: "#1e293b",
+        backgroundColor: "#ffffff",
+        buttons: ["back", "skip", "primary"],
       }}
       styles={{
         tooltip: {
-          maxWidth: '85vw',
-          padding: '16px',
-          borderRadius: '16px',
-          fontSize: '14px',
+          maxWidth: "85vw",
+          padding: "16px",
+          borderRadius: "16px",
+          fontSize: "14px",
         },
         tooltipContainer: {
-          textAlign: 'left',
+          textAlign: "left",
         },
         buttonPrimary: {
-          borderRadius: '8px',
-          fontWeight: 'bold',
-          padding: '8px 16px',
+          borderRadius: "8px",
+          fontWeight: "bold",
+          padding: "8px 16px",
         },
         buttonBack: {
           marginRight: 10,
-          color: '#64748b',
+          color: "#64748b",
         },
         buttonSkip: {
-          color: '#94a3b8',
+          color: "#94a3b8",
         },
         buttonClose: {
-          display: 'none',
+          display: "none",
         },
       }}
       locale={{
-        back: 'Quay lại',
-        close: 'Đóng',
-        last: 'Hoàn thành',
-        next: 'Tiếp tục',
-        skip: 'Bỏ qua',
+        back: "Quay lại",
+        close: "Đóng",
+        last: "Hoàn thành",
+        next: "Tiếp tục",
+        skip: "Bỏ qua",
       }}
     />
   );

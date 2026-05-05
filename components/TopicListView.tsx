@@ -58,6 +58,11 @@ export default function TopicListView({
     return a.localeCompare(b);
   });
 
+  // Tìm category đầu tiên có ít nhất 1 topic để gán class tour-topic-item
+  const firstNonEmptyCat = sortedCategories.find(
+    (cat) => groupedTopics[cat] && groupedTopics[cat].length > 0,
+  );
+
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-fade-in">
       <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -131,7 +136,7 @@ export default function TopicListView({
                     <button
                       key={topic.id}
                       onClick={() => onSelectTopic(topic)}
-                      className={`group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden ${index === 0 && catName === sortedCategories[0] ? "tour-topic-item" : ""}`}
+                      className={`group relative flex items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden ${index === 0 && catName === firstNonEmptyCat ? "tour-topic-item" : ""}`}
                     >
                       <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full blur-2xl -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
