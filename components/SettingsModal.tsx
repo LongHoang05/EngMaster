@@ -14,9 +14,10 @@ import {
   ChevronRight,
   ShieldCheck,
   Smartphone,
-  Trash2,
   RefreshCw,
   Download,
+  Volume2,
+  Trash2,
 } from "lucide-react";
 
 interface SettingsModalProps {
@@ -39,7 +40,7 @@ export default function SettingsModal({
   onExportData,
 }: SettingsModalProps) {
   const [activeSection, setActiveSection] = useState<
-    "profile" | "notifications" | "appearance" | "data"
+    "profile" | "sound" | "notifications" | "appearance" | "data"
   >("profile");
   const [tempName, setTempName] = useState(displayName);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,8 +58,46 @@ export default function SettingsModal({
     setIsSaving(false);
   };
 
+  const [soundEffects, setSoundEffects] = useState(true);
+  const [soundVolume, setSoundVolume] = useState(0.7);
+  const [voice, setVoice] = useState(true);
+  const [voiceVolume, setVoiceVolume] = useState(1.0);
+
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      setSoundEffects(localStorage.getItem("setting_sound_effects") !== "off");
+      const sVol = localStorage.getItem("setting_sound_volume");
+      if (sVol) setSoundVolume(parseFloat(sVol));
+      
+      setVoice(localStorage.getItem("setting_voice") !== "off");
+      const vVol = localStorage.getItem("setting_voice_volume");
+      if (vVol) setVoiceVolume(parseFloat(vVol));
+    }
+  }, [isOpen]);
+
+  const toggleSoundEffects = (checked: boolean) => {
+    setSoundEffects(checked);
+    localStorage.setItem("setting_sound_effects", checked ? "on" : "off");
+  };
+
+  const changeSoundVolume = (vol: number) => {
+    setSoundVolume(vol);
+    localStorage.setItem("setting_sound_volume", vol.toString());
+  };
+
+  const toggleVoice = (checked: boolean) => {
+    setVoice(checked);
+    localStorage.setItem("setting_voice", checked ? "on" : "off");
+  };
+
+  const changeVoiceVolume = (vol: number) => {
+    setVoiceVolume(vol);
+    localStorage.setItem("setting_voice_volume", vol.toString());
+  };
+
   const sections = [
     { id: "profile", label: "Cá nhân", icon: User },
+    { id: "sound", label: "Âm thanh", icon: Volume2 },
     { id: "notifications", label: "Thông báo", icon: Bell },
     { id: "appearance", label: "Giao diện", icon: Moon },
     { id: "data", label: "Dữ liệu & Hệ thống", icon: ShieldCheck },
@@ -203,6 +242,92 @@ export default function SettingsModal({
                             nhân. Hãy lưu giữ mã này để truy cập trên các thiết
                             bị khác.
                           </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeSection === "sound" as any && (
+                    <motion.div
+                      key="sound"
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      className="space-y-6"
+                    >
+                      <h3 className="text-lg font-black text-slate-800">
+                        Cài đặt âm thanh
+                      </h3>
+
+                      <div className="space-y-6">
+                        {/* Hiệu ứng âm thanh */}
+                        <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 bg-white rounded-xl text-indigo-500 shadow-sm">
+                                <Volume2 size={20} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800">Hiệu ứng (Đúng/Sai)</p>
+                                <p className="text-xs text-slate-400 font-medium">Âm thanh khi trả lời flashcard</p>
+                              </div>
+                            </div>
+                            {/* Toggle switch */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" checked={soundEffects} onChange={(e) => toggleSoundEffects(e.target.checked)} />
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+                          
+                          {soundEffects && (
+                            <div className="px-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-slate-500">Âm lượng</span>
+                                <span className="text-xs font-bold text-indigo-600">{Math.round(soundVolume * 100)}%</span>
+                              </div>
+                              <input 
+                                type="range" min="0" max="1" step="0.1" 
+                                value={soundVolume} 
+                                onChange={(e) => changeSoundVolume(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Đọc từ vựng */}
+                        <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 bg-white rounded-xl text-emerald-500 shadow-sm">
+                                <Volume2 size={20} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800">Đọc từ vựng (Phát âm)</p>
+                                <p className="text-xs text-slate-400 font-medium">Tự động đọc tiếng Anh</p>
+                              </div>
+                            </div>
+                            {/* Toggle switch */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" checked={voice} onChange={(e) => toggleVoice(e.target.checked)} />
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                          </div>
+                          
+                          {voice && (
+                            <div className="px-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-slate-500">Âm lượng phát âm</span>
+                                <span className="text-xs font-bold text-emerald-600">{Math.round(voiceVolume * 100)}%</span>
+                              </div>
+                              <input 
+                                type="range" min="0" max="1" step="0.1" 
+                                value={voiceVolume} 
+                                onChange={(e) => changeVoiceVolume(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
