@@ -279,11 +279,17 @@ export default function DashboardScreen({
       setIsLoadingLeaderboard(true);
       try {
         if (lbTab === "streak") {
+          // Lấy ngày hôm qua (theo giờ địa phương)
+          const yesterdayDate = new Date();
+          yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+          const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
+
           // Streak remains a direct user table query (small set)
           const { data, error } = await supabase
             .from("users")
             .select("user_code, display_name, current_streak")
-            .not("current_streak", "is", null)
+            .gt("current_streak", 0)
+            .gte("last_active_date", yesterdayStr) // CHỈ lấy những người chưa mất chuỗi (có học hnay hoặc hqua)
             .order("current_streak", { ascending: false })
             .limit(10);
 
