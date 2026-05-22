@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings,
@@ -44,6 +44,12 @@ export default function SettingsModal({
   const [tempName, setTempName] = useState(displayName);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setTempName(displayName);
+    }
+  }, [isOpen, displayName]);
+
   const handleSaveName = async () => {
     if (tempName === displayName) return;
     setIsSaving(true);
@@ -74,25 +80,35 @@ export default function SettingsModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 overflow-hidden flex flex-col md:flex-row h-[600px]"
+            className="relative w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-[600px]"
           >
             {/* Sidebar */}
-            <div className="w-full md:w-64 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 p-6 flex flex-col">
-              <div className="flex items-center gap-3 mb-8 px-2">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                  <Settings size={20} />
+            <div className="w-full md:w-64 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 p-4 md:p-6 flex flex-col shrink-0">
+              <div className="flex items-center justify-between md:justify-start mb-4 md:mb-8 px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <Settings size={20} />
+                  </div>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight">
+                    Cài đặt
+                  </h2>
                 </div>
-                <h2 className="text-xl font-black text-slate-800 tracking-tight">
-                  Cài đặt
-                </h2>
+                
+                {/* Mobile Close Button */}
+                <button
+                  onClick={onClose}
+                  className="md:hidden p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                >
+                  <X size={20} />
+                </button>
               </div>
 
-              <nav className="flex-1 space-y-1">
+              <nav className="flex md:flex-1 md:flex-col overflow-x-auto md:overflow-visible gap-2 md:gap-1 pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {sections.map((section) => (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id as any)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
+                    className={`shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-2xl font-bold text-sm transition-all ${
                       activeSection === section.id
                         ? "bg-white text-indigo-600 shadow-sm border border-slate-100"
                         : "text-slate-500 hover:bg-white/50"
@@ -102,11 +118,21 @@ export default function SettingsModal({
                     {section.label}
                   </button>
                 ))}
+                
+                {/* Mobile Logout Button */}
+                <button
+                  onClick={onLogout}
+                  className="md:hidden shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-sm text-rose-500 bg-rose-50/50 hover:bg-rose-100 transition-all border border-rose-100/50"
+                >
+                  <LogOut size={18} />
+                  Đăng xuất
+                </button>
               </nav>
 
+              {/* Desktop Logout Button */}
               <button
                 onClick={onLogout}
-                className="mt-auto flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm text-rose-500 hover:bg-rose-50 transition-all"
+                className="hidden md:flex mt-auto items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm text-rose-500 hover:bg-rose-50 transition-all"
               >
                 <LogOut size={18} />
                 Đăng xuất
@@ -115,7 +141,7 @@ export default function SettingsModal({
 
             {/* Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden bg-white">
-              <div className="p-4 flex justify-end md:absolute md:top-6 md:right-6 z-10">
+              <div className="hidden md:flex absolute top-6 right-6 z-10">
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
@@ -124,7 +150,7 @@ export default function SettingsModal({
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 md:p-10 pt-4 md:pt-10">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10 md:pt-10">
                 <AnimatePresence mode="wait">
                   {activeSection === "profile" && (
                     <motion.div
@@ -148,12 +174,12 @@ export default function SettingsModal({
                                 type="text"
                                 value={tempName}
                                 onChange={(e) => setTempName(e.target.value)}
-                                className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all"
+                                className="flex-1 min-w-0 bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all"
                               />
                               <button
                                 onClick={handleSaveName}
                                 disabled={isSaving || tempName === displayName}
-                                className="px-6 py-3.5 bg-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                                className="shrink-0 px-6 py-3.5 bg-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
                               >
                                 {isSaving ? "Lưu..." : "Lưu"}
                               </button>

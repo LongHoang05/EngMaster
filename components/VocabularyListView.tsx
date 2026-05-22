@@ -22,6 +22,7 @@ interface VocabularyListViewProps {
   onDeleteTopic: (id: string, name: string) => void;
   onDeleteWord: (id: string, word: string) => void;
   onEditWord: (word: Vocabulary) => void;
+  onEditTopic: () => void;
   isOwner: boolean;
 }
 
@@ -49,6 +50,7 @@ export default function VocabularyListView({
   onDeleteTopic,
   onDeleteWord,
   onEditWord,
+  onEditTopic,
   isOwner,
 }: VocabularyListViewProps) {
   const [filterType, setFilterType] = React.useState<string>("all");
@@ -105,18 +107,27 @@ export default function VocabularyListView({
               />
             </div>
             {isOwner && (
-              <button
-                onClick={() => onDeleteTopic(topic.id, topic.name)}
-                className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-100 shrink-0"
-                title="Xóa chủ đề"
-              >
-                <Trash2 size={20} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={onEditTopic}
+                  className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-transparent hover:border-indigo-100"
+                  title="Sửa chủ đề"
+                >
+                  <Edit2 size={20} />
+                </button>
+                <button
+                  onClick={() => onDeleteTopic(topic.id, topic.name)}
+                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-100"
+                  title="Xóa chủ đề"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
+        <div className="hidden items-center gap-3 mt-4 md:mt-0">
           <div className="flex items-center gap-2 bg-white/50 p-1 rounded-xl border border-slate-100">
             <span className="text-[10px] font-black uppercase text-slate-400 px-2">Loại từ</span>
             <select 

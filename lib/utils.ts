@@ -5,6 +5,9 @@ export function maskUserCode(code: string | null): string {
   return code.slice(0, 3) + "***";
 }
 
+export const ADMIN_CODE = "lhg";
+
+
 let globalAudioContext: AudioContext | null = null;
 const getAudioContext = () => {
   if (typeof window === "undefined") return null;

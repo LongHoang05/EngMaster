@@ -102,7 +102,7 @@ export default function ExportExcelModal({
   const isIndeterminate = selectedTopicIds.size > 0 && selectedTopicIds.size < topics.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] border border-slate-100">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
@@ -122,7 +122,7 @@ export default function ExportExcelModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 hide-scroll">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 hide-scroll min-h-0">
           {/* Toàn bộ */}
           <div 
             onClick={handleToggleAll}

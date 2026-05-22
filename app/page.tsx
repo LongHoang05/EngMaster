@@ -35,6 +35,7 @@ import VocabularyListView from "@/components/VocabularyListView";
 import FlashcardPlayer from "@/components/FlashcardPlayer";
 import QuizContainer from "@/components/QuizContainer";
 import AddTopicModal from "@/components/AddTopicModal";
+import EditTopicModal from "@/components/EditTopicModal";
 import EditVocabularyModal from "@/components/EditVocabularyModal";
 import AddVocabularyBar from "@/components/AddVocabularyBar";
 import ExportExcelModal from "@/components/ExportExcelModal";
@@ -64,6 +65,7 @@ export default function EngMaster() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [hasStudiedToday, setHasStudiedToday] = useState(false);
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
+  const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
   const [isExportExcelModalOpen, setIsExportExcelModalOpen] = useState(false);
   const [isEditWordModalOpen, setIsEditWordModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState<Vocabulary | null>(null);
@@ -126,9 +128,9 @@ export default function EngMaster() {
         setDisplayName(data.display_name || "Học giả bí ẩn");
 
         if (data.last_active_date) {
+          const lastActiveStr = data.last_active_date.split('T')[0];
           setHasStudiedToday(
-            new Date(data.last_active_date).toLocaleDateString("en-CA") ===
-              new Date().toLocaleDateString("en-CA"),
+            lastActiveStr === new Date().toLocaleDateString("en-CA")
           );
         } else {
           setHasStudiedToday(false);
@@ -250,6 +252,25 @@ export default function EngMaster() {
     }
   };
 
+  const handleBulkDeleteTopics = async (topicIds: string[]) => {
+    if (topicIds.length === 0) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${topicIds.length} chủ đề và TẤT CẢ từ vựng bên trong?`))
+      return;
+
+    try {
+      const { error } = await supabase
+        .from("topics")
+        .delete()
+        .in("id", topicIds);
+      if (error) throw error;
+      toast.success(`Đã xóa ${topicIds.length} chủ đề.`);
+      fetchTopics();
+    } catch (err) {
+      const error = err as Error;
+      toast.error("Không thể xóa chủ đề: " + error.message);
+    }
+  };
+
   const handleDeleteWord = async (wordId: string, wordText: string) => {
     if (!confirm(`Xóa từ "${wordText}"?`)) return;
     try {
@@ -290,7 +311,7 @@ export default function EngMaster() {
       const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
 
       let newStreak = user.current_streak || 0;
-      const lastActive = user.last_active_date;
+      const lastActive = user.last_active_date ? user.last_active_date.split('T')[0] : null;
 
       let needsUpdate = false;
 
@@ -555,6 +576,7 @@ export default function EngMaster() {
                   setIsAddTopicModalOpen={setIsAddTopicModalOpen}
                   setIsExportExcelModalOpen={setIsExportExcelModalOpen}
                   onSelectTopic={setSelectedTopic}
+                  onBulkDelete={handleBulkDeleteTopics}
                 />
               ) : (
                 <div className="flex flex-col gap-6">
@@ -580,6 +602,7 @@ export default function EngMaster() {
                         onDeleteTopic={handleDeleteTopic}
                         onDeleteWord={handleDeleteWord}
                         onEditWord={handleEditWord}
+                        onEditTopic={() => setIsEditTopicModalOpen(true)}
                         isOwner={selectedTopic.user_code === userCode}
                       />
                     </>
@@ -640,7 +663,18 @@ export default function EngMaster() {
         wordData={editingWord}
         onSuccess={() => {
           if (selectedTopic) fetchVocabularies(selectedTopic.id);
-          fetchTopics();
+        }}
+      />
+
+      <EditTopicModal
+        isOpen={isEditTopicModalOpen}
+        onClose={() => setIsEditTopicModalOpen(false)}
+        topic={selectedTopic}
+        onSuccess={(updatedTopic) => {
+          if (selectedTopic) {
+            setSelectedTopic({ ...selectedTopic, ...updatedTopic } as Topic);
+            fetchTopics();
+          }
         }}
       />
 
