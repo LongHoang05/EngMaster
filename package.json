@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.60",
+    "@ai-sdk/react": "^3.0.193",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@supabase/supabase-js": "^2.103.0",
     "@use-gesture/react": "^10.3.1",
     "ai": "^6.0.154",
@@ -22,8 +24,7 @@
     "react-onesignal": "^3.5.1",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
-    "xlsx": "^0.18.5",
-    "zustand": "^5.0.12"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

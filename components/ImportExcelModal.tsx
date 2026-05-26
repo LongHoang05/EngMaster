@@ -14,7 +14,7 @@ import {
   FileText
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+
 import { supabase } from "@/lib/supabase";
 
 interface ImportExcelModalProps {
@@ -92,6 +92,7 @@ export default function ImportExcelModal({
     setStep("parsing");
     try {
       const dataBuffer = await selectedFile.arrayBuffer();
+      const XLSX = await import("xlsx");
       const wb = XLSX.read(dataBuffer, { type: "array" });
 
       if (wb.SheetNames.length === 0) {

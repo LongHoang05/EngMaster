@@ -1,31 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   BookOpen,
   Gamepad2,
-  Plus,
   LogOut,
-  Search,
-  Sparkles,
-  Volume2,
   GraduationCap,
-  X,
-  Edit2,
   Settings,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
-import * as XLSX from "xlsx";
 
-import { supabase } from "@/lib/supabase";
-import {
-  Topic,
-  Vocabulary,
-  AutocompleteWord,
-  DictSuggestion,
-} from "@/lib/types";
-import { playAudio, playSuccessSound } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useTopics } from "@/hooks/useTopics";
+import { useVocabularies } from "@/hooks/useVocabularies";
 
 // Components
 import LoginScreen from "@/components/LoginScreen";
@@ -44,317 +32,66 @@ import AppTour from "@/components/AppTour";
 import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+
+const AIChatWidget = dynamic(() => import("@/components/AIChatWidget"), { ssr: false });
 
 export default function EngMaster() {
-  const [userCode, setUserCode] = useState<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz">(
-    "dashboard",
-  );
+  const {
+    userCode,
+    isAuthLoading,
+    currentStreak,
+    hasStudiedToday,
+    displayName,
+    isSavingName,
+    celebrationStreakCount,
+    isStreakCelebrationOpen,
+    setIsStreakCelebrationOpen,
+    handleLoginSuccess,
+    handleLogout,
+    handleUpdateDisplayName,
+    handleUpdateStreak,
+  } = useAuth();
 
-  // Data
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
-  const [flashcardQueue, setFlashcardQueue] = useState<Vocabulary[]>([]);
+  const {
+    topics,
+    selectedTopic,
+    setSelectedTopic,
+    isTopicLoading,
+    isExporting,
+    fetchTopics,
+    handleDeleteTopic,
+    handleBulkDeleteTopics,
+    handleExportExcel,
+  } = useTopics(userCode);
 
-  // UI State
-  const [isTopicLoading, setIsTopicLoading] = useState(false);
-  // const [isVocabLoading, setIsVocabLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [hasStudiedToday, setHasStudiedToday] = useState(false);
+  const {
+    vocabularies,
+    flashcardQueue,
+    viewMode,
+    setViewMode,
+    searchTerm,
+    setSearchTerm,
+    editingWord,
+    setEditingWord,
+    isEditWordModalOpen,
+    setIsEditWordModalOpen,
+    fetchVocabularies,
+    handleDeleteWord,
+    handleEditWord,
+    startFlashcards,
+    handleFlashcardAnswer,
+  } = useVocabularies(selectedTopic, fetchTopics);
+
+  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz">("dashboard");
+
+  // UI State for Modals
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
   const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
   const [isExportExcelModalOpen, setIsExportExcelModalOpen] = useState(false);
-  const [isEditWordModalOpen, setIsEditWordModalOpen] = useState(false);
-  const [editingWord, setEditingWord] = useState<Vocabulary | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "flashcards">("list");
-  const [searchTerm, setSearchTerm] = useState("");
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-
-  // Settings & Tour State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [tourKey, setTourKey] = useState(0);
-
-  // Streak Celebration State
-  const [isStreakCelebrationOpen, setIsStreakCelebrationOpen] = useState(false);
-  const [celebrationStreakCount, setCelebrationStreakCount] = useState(0);
-
-  // User Profile
-  const [displayName, setDisplayName] = useState("Học giả bí ẩn");
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [isSavingName, setIsSavingName] = useState(false);
-  const [tempName, setTempName] = useState("");
-
-  // 1. AUTH
-  useEffect(() => {
-    const saved = localStorage.getItem("eng_master_user_code");
-    if (saved) {
-      setUserCode(saved);
-      syncUserProfile(saved);
-    }
-    setIsAuthLoading(false);
-  }, []);
-
-  const handleLoginSuccess = (code: string) => {
-    localStorage.setItem("eng_master_user_code", code);
-    setUserCode(code);
-    syncUserProfile(code);
-    toast.success("Đã đăng nhập dưới mã: " + code);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("eng_master_user_code");
-    setUserCode(null);
-    setTopics([]);
-    setActiveTab("dashboard");
-    setIsLogoutModalOpen(false);
-    toast.info("Đã đăng xuất");
-  };
-
-  const syncUserProfile = async (code: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("current_streak, display_name, last_active_date")
-        .eq("user_code", code)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-
-      if (data) {
-        let currentStreak = data.current_streak || 0;
-        let lastActiveStr = data.last_active_date ? data.last_active_date.split('T')[0] : null;
-
-        const todayStr = new Date().toLocaleDateString("en-CA");
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
-
-        // Nếu người dùng không hoạt động hôm qua hoặc hôm nay -> chuỗi bị đứt
-        if (lastActiveStr && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
-           if (currentStreak > 0) {
-             currentStreak = 0;
-             // Cập nhật lại database
-             await supabase.from("users").update({ current_streak: 0 }).eq("user_code", code);
-           }
-        }
-
-        setCurrentStreak(currentStreak);
-        setDisplayName(data.display_name || "Học giả bí ẩn");
-        setHasStudiedToday(lastActiveStr === todayStr);
-      } else {
-        // Create user record if not exists
-        await supabase.from("users").insert({
-          user_code: code,
-          display_name: "Học giả bí ẩn",
-          current_streak: 0,
-        });
-        setDisplayName("Học giả bí ẩn");
-      }
-    } catch (e) {
-      console.error("User profile sync error", e);
-    }
-  };
-
-  const handleUpdateDisplayName = async (newName: string) => {
-    if (!userCode || !newName.trim()) {
-      return;
-    }
-
-    const finalName = newName.slice(0, 25);
-    setDisplayName(finalName);
-    setIsSavingName(true);
-
-    try {
-      const { error } = await supabase
-        .from("users")
-        .update({ display_name: finalName })
-        .eq("user_code", userCode);
-
-      if (error) throw error;
-      toast.success("Đã cập nhật tên hiển thị!");
-    } catch (e: unknown) {
-      const error = e as Error;
-      toast.error("Không thể lưu tên: " + error.message);
-      // Rollback if needed
-      if (userCode) syncUserProfile(userCode);
-    } finally {
-      setIsSavingName(false);
-    }
-  };
-
-  // 2. FETCH TOPICS
-  const fetchTopics = useCallback(async () => {
-    if (!userCode) return;
-    setIsTopicLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("topics")
-        .select("*, vocabularies(count)")
-        .or(`user_code.eq.${userCode},user_code.is.null`);
-
-      if (error) throw error;
-      const formatted = (data || []).map(
-        (t: Topic & { vocabularies?: { count: number }[] }) => ({
-          ...t,
-          vocab_count: t.vocabularies?.[0]?.count || 0,
-        }),
-      );
-      setTopics(formatted);
-    } finally {
-      setIsTopicLoading(false);
-    }
-  }, [userCode]);
-
-  useEffect(() => {
-    if (userCode) {
-      fetchTopics();
-    }
-  }, [userCode, fetchTopics]);
-
-  // 3. FETCH VOCABULARIES
-  const fetchVocabularies = useCallback(async (topicId: string) => {
-    // setIsVocabLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("vocabularies")
-        .select("*")
-        .eq("topic_id", topicId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setVocabularies(data || []);
-    } catch (err) {
-      console.error("Fetch vocab error:", err);
-    } finally {
-      // setIsVocabLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedTopic) {
-      fetchVocabularies(selectedTopic.id);
-    } else {
-      setVocabularies([]);
-    }
-  }, [selectedTopic, fetchVocabularies]);
-
-  // 4. ACTION HANDLERS
-  const handleDeleteTopic = async (topicId: string, topicName: string) => {
-    if (!confirm(`Xóa chủ đề "${topicName}" và TẤT CẢ từ vựng bên trong?`))
-      return;
-
-    try {
-      const { error } = await supabase
-        .from("topics")
-        .delete()
-        .eq("id", topicId);
-      if (error) throw error;
-      toast.success("Đã xóa chủ đề.");
-      setSelectedTopic(null);
-      fetchTopics();
-    } catch (err) {
-      const error = err as Error;
-      toast.error("Lỗi xóa: " + error.message);
-    }
-  };
-
-  const handleBulkDeleteTopics = async (topicIds: string[]) => {
-    if (topicIds.length === 0) return;
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${topicIds.length} chủ đề và TẤT CẢ từ vựng bên trong?`))
-      return;
-
-    try {
-      const { error } = await supabase
-        .from("topics")
-        .delete()
-        .in("id", topicIds);
-      if (error) throw error;
-      toast.success(`Đã xóa ${topicIds.length} chủ đề.`);
-      fetchTopics();
-    } catch (err) {
-      const error = err as Error;
-      toast.error("Không thể xóa chủ đề: " + error.message);
-    }
-  };
-
-  const handleDeleteWord = async (wordId: string, wordText: string) => {
-    if (!confirm(`Xóa từ "${wordText}"?`)) return;
-    try {
-      const { error } = await supabase
-        .from("vocabularies")
-        .delete()
-        .eq("id", wordId);
-      if (error) throw error;
-      toast.success("Đã xóa từ.");
-      if (selectedTopic) fetchVocabularies(selectedTopic.id);
-      fetchTopics();
-    } catch (err) {
-      const error = err as Error;
-      toast.error("Lỗi xóa: " + error.message);
-    }
-  };
-
-  const handleEditWord = (word: Vocabulary) => {
-    setEditingWord(word);
-    setIsEditWordModalOpen(true);
-  };
-
-  const handleUpdateStreak = async () => {
-    if (!userCode) return;
-    try {
-      // Manual streak calculation instead of RPC
-      const { data: user, error: fetchErr } = await supabase
-        .from("users")
-        .select("current_streak, last_active_date")
-        .eq("user_code", userCode)
-        .single();
-
-      if (fetchErr) throw fetchErr;
-
-      const todayStr = new Date().toLocaleDateString("en-CA");
-      const yesterdayDate = new Date();
-      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-      const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
-
-      let newStreak = user.current_streak || 0;
-      const lastActive = user.last_active_date ? user.last_active_date.split('T')[0] : null;
-
-      let needsUpdate = false;
-
-      if (!lastActive || lastActive === yesterdayStr) {
-        newStreak += 1;
-        needsUpdate = true;
-      } else if (lastActive !== todayStr) {
-        newStreak = 1;
-        needsUpdate = true;
-      }
-
-      if (needsUpdate || lastActive !== todayStr) {
-        const { error: updateErr } = await supabase
-          .from("users")
-          .update({
-            current_streak: newStreak,
-            last_active_date: todayStr,
-          })
-          .eq("user_code", userCode);
-
-        if (updateErr) throw updateErr;
-      }
-
-      if (lastActive !== todayStr) {
-        setCelebrationStreakCount(newStreak);
-        setIsStreakCelebrationOpen(true);
-      }
-
-      setCurrentStreak(newStreak);
-      setHasStudiedToday(true);
-    } catch (e) {
-      console.error("Streak sync error", e);
-    }
-  };
 
   const handleRestartTour = () => {
     localStorage.removeItem("eng_master_tour_completed");
@@ -364,114 +101,13 @@ export default function EngMaster() {
   };
 
   const handleExportAll = () => {
-    handleExportExcel(
-      topics,
-      `EngMaster_Backup_${new Date().toLocaleDateString("en-CA")}`,
-    );
+    handleExportExcel(topics, `EngMaster_Backup_${new Date().toLocaleDateString("en-CA")}`, () => setIsExportExcelModalOpen(false));
   };
 
-  const startFlashcards = () => {
-    if (vocabularies.length === 0) return;
-    const queue = [...vocabularies].sort(() => 0.5 - Math.random());
-    setFlashcardQueue(queue);
-    setViewMode("flashcards");
-  };
-
-  const handleFlashcardAnswer = async (wordId: string, known: boolean) => {
-    if (known) {
-      try {
-        const word = vocabularies.find((v) => v.id === wordId);
-        const currentInterval = word?.review_interval || 0;
-        const nextInt =
-          currentInterval === 0 ? 1 : Math.ceil(currentInterval * 2.5);
-        const nextDate = new Date();
-        nextDate.setDate(nextDate.getDate() + (nextInt > 365 ? 365 : nextInt));
-
-        await supabase
-          .from("vocabularies")
-          .update({
-            review_interval: nextInt > 365 ? 365 : nextInt,
-            next_review_date: nextDate.toISOString(),
-          })
-          .eq("id", wordId);
-      } catch (e) {
-        console.error("Update mastery error", e);
-      }
-    }
-
-    setFlashcardQueue((prev) => prev.slice(1));
-    if (flashcardQueue.length === 1) {
-      handleUpdateStreak();
-    }
-  };
-
-  // 5. EXCEL LOGIC
-  const handleExportExcel = async (
-    topicsToExport: Topic[],
-    filename: string,
-  ) => {
-    if (topicsToExport.length === 0) {
-      toast.error("Không có chủ đề nào để xuất.");
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      const wb = XLSX.utils.book_new();
-      let totalWords = 0;
-
-      // Mỗi topic = 1 sheet, giống format import
-      for (const topic of topicsToExport) {
-        const { data: vocabs, error } = await supabase
-          .from("vocabularies")
-          .select("word, ipa, meanings, notes")
-          .eq("topic_id", topic.id);
-
-        if (error) throw error;
-        if (!vocabs || vocabs.length === 0) continue;
-
-        const sheetData = vocabs.map((v) => {
-          const meaningsStr = Array.isArray(v.meanings)
-            ? v.meanings.join(", ")
-            : v.meanings || "";
-          return {
-            "Từ vựng": v.word || "",
-            "Phiên âm": v.ipa || "",
-            "Nghĩa tiếng Việt": meaningsStr,
-          };
-        });
-
-        const ws = XLSX.utils.json_to_sheet(sheetData);
-        ws["!cols"] = [
-          { wch: 25 }, // Từ vựng
-          { wch: 20 }, // Phiên âm
-          { wch: 45 }, // Nghĩa tiếng Việt
-        ];
-
-        // Sheet name max 31 chars (Excel limit), remove invalid chars
-        const safeName =
-          topic.name.replace(/[:\\/?*\[\]]/g, "").slice(0, 31) || "Sheet";
-        XLSX.utils.book_append_sheet(wb, ws, safeName);
-        totalWords += sheetData.length;
-      }
-
-      if (totalWords === 0) {
-        toast.error("Không có từ vựng nào trong các chủ đề đã chọn.");
-        setIsExporting(false);
-        return;
-      }
-
-      XLSX.writeFile(wb, `${filename}.xlsx`);
-      toast.success(
-        `Xuất thành công ${totalWords} từ vựng (${wb.SheetNames.length} sheet)!`,
-      );
-      setIsExportExcelModalOpen(false);
-    } catch (err) {
-      const error = err as Error;
-      toast.error("Lỗi xuất Excel: " + error.message);
-    } finally {
-      setIsExporting(false);
-    }
+  const fullLogout = () => {
+    handleLogout();
+    setActiveTab("dashboard");
+    setIsLogoutModalOpen(false);
   };
 
   // RENDERING
@@ -526,9 +162,7 @@ export default function EngMaster() {
               }`}
             >
               <tab.icon className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-              <span
-                className={activeTab === tab.id ? "block" : "hidden sm:block"}
-              >
+              <span className={activeTab === tab.id ? "block" : "hidden sm:block"}>
                 {tab.label}
               </span>
             </button>
@@ -619,7 +253,7 @@ export default function EngMaster() {
                     <FlashcardPlayer
                       queue={flashcardQueue}
                       onFinish={() => setViewMode("list")}
-                      onAnswer={handleFlashcardAnswer}
+                      onAnswer={(wordId, known) => handleFlashcardAnswer(wordId, known, handleUpdateStreak)}
                       onBack={() => setViewMode("list")}
                     />
                   )}
@@ -652,7 +286,7 @@ export default function EngMaster() {
         onClose={() => setIsExportExcelModalOpen(false)}
         topics={topics}
         userCode={userCode || ""}
-        onExport={handleExportExcel}
+        onExport={(topics, name) => handleExportExcel(topics, name, () => setIsExportExcelModalOpen(false))}
         isExporting={isExporting}
       />
 
@@ -681,7 +315,7 @@ export default function EngMaster() {
         topic={selectedTopic}
         onSuccess={(updatedTopic) => {
           if (selectedTopic) {
-            setSelectedTopic({ ...selectedTopic, ...updatedTopic } as Topic);
+            setSelectedTopic({ ...selectedTopic, ...updatedTopic });
             fetchTopics();
           }
         }}
@@ -713,12 +347,8 @@ export default function EngMaster() {
             <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
               <LogOut size={32} />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 mb-2">
-              Đăng xuất?
-            </h3>
-            <p className="text-slate-500 font-medium mb-8">
-              Bạn có chắc chắn muốn thoát khỏi phiên làm việc này không?
-            </p>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">Đăng xuất?</h3>
+            <p className="text-slate-500 font-medium mb-8">Bạn có chắc chắn muốn thoát khỏi phiên làm việc này không?</p>
             <div className="flex gap-4">
               <button
                 onClick={() => setIsLogoutModalOpen(false)}
@@ -727,7 +357,7 @@ export default function EngMaster() {
                 Hủy
               </button>
               <button
-                onClick={handleLogout}
+                onClick={fullLogout}
                 className="flex-1 py-4 bg-rose-500 text-white font-black rounded-2xl hover:bg-rose-600 shadow-xl shadow-rose-100 transition-all active:scale-95"
               >
                 Đăng xuất
@@ -735,6 +365,13 @@ export default function EngMaster() {
             </div>
           </div>
         </div>
+      )}
+
+      {userCode && (
+        <AIChatWidget 
+          selectedTopic={selectedTopic} 
+          vocabularies={vocabularies} 
+        />
       )}
     </div>
   );
