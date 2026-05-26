@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Sparkles, Languages } from "lucide-react";
 
 import { Vocabulary, Topic } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +34,32 @@ export default function AIChatWidget({ selectedTopic, vocabularies }: AIChatWidg
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+
+  const handleTranslate = async (msgId: string, text: string) => {
+    if (translations[msgId]) return;
+    setTranslatingIds(prev => new Set(prev).add(msgId));
+    try {
+      const res = await fetch('/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTranslations(prev => ({ ...prev, [msgId]: data.translation }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTranslatingIds(prev => {
+        const next = new Set(prev);
+        next.delete(msgId);
+        return next;
+      });
+    }
+  };
   const [messages, setMessages] = useState<{id: string, role: 'user' | 'assistant', content: string}[]>([
     {
       id: 'welcome',
@@ -175,6 +201,22 @@ export default function AIChatWidget({ selectedTopic, vocabularies }: AIChatWidg
                   )}
                   <div className={`px-4 py-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-indigo-500 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
                     {formatText(m.content)}
+                    
+                    {m.role === 'assistant' && !translations[m.id] && m.content.trim().length > 10 && (
+                      <button 
+                        onClick={() => handleTranslate(m.id, m.content)}
+                        disabled={translatingIds.has(m.id)}
+                        className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-indigo-500 mt-2.5 transition-colors font-medium border border-slate-100 bg-slate-50 px-2 py-1 rounded-md active:scale-95"
+                      >
+                        <Languages size={12} />
+                        {translatingIds.has(m.id) ? "Đang dịch..." : "Dịch sang Tiếng Việt"}
+                      </button>
+                    )}
+                    {translations[m.id] && (
+                      <div className="mt-3 pt-3 border-t border-slate-100 text-[13px] text-slate-500/90 italic leading-relaxed">
+                        {formatText(translations[m.id])}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
