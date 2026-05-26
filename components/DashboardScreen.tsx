@@ -230,7 +230,7 @@ export default function DashboardScreen({
         const last7Days = [...Array(7)].map((_, i) => {
           const d = new Date();
           d.setDate(d.getDate() - i);
-          return d.toISOString().split('T')[0];
+          return d.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
         }).reverse();
 
         last7Days.forEach(day => addedByDate[day] = 0);
@@ -243,10 +243,12 @@ export default function DashboardScreen({
           else if (iv < 30) l3++;
           else l4++;
 
-          // Activity by date
-          const date = v.created_at?.split('T')[0];
-          if (addedByDate[date] !== undefined) {
-            addedByDate[date]++;
+          // Activity by date (using VN Timezone)
+          if (v.created_at) {
+            const vnDate = new Date(v.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+            if (addedByDate[vnDate] !== undefined) {
+              addedByDate[vnDate]++;
+            }
           }
         });
 

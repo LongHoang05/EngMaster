@@ -124,17 +124,26 @@ export default function EngMaster() {
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        setCurrentStreak(data.current_streak || 0);
-        setDisplayName(data.display_name || "Học giả bí ẩn");
+        let currentStreak = data.current_streak || 0;
+        let lastActiveStr = data.last_active_date ? data.last_active_date.split('T')[0] : null;
 
-        if (data.last_active_date) {
-          const lastActiveStr = data.last_active_date.split('T')[0];
-          setHasStudiedToday(
-            lastActiveStr === new Date().toLocaleDateString("en-CA")
-          );
-        } else {
-          setHasStudiedToday(false);
+        const todayStr = new Date().toLocaleDateString("en-CA");
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
+
+        // Nếu người dùng không hoạt động hôm qua hoặc hôm nay -> chuỗi bị đứt
+        if (lastActiveStr && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
+           if (currentStreak > 0) {
+             currentStreak = 0;
+             // Cập nhật lại database
+             await supabase.from("users").update({ current_streak: 0 }).eq("user_code", code);
+           }
         }
+
+        setCurrentStreak(currentStreak);
+        setDisplayName(data.display_name || "Học giả bí ẩn");
+        setHasStudiedToday(lastActiveStr === todayStr);
       } else {
         // Create user record if not exists
         await supabase.from("users").insert({

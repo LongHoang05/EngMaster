@@ -68,7 +68,7 @@ export default function SettingsModal({
       setSoundEffects(localStorage.getItem("setting_sound_effects") !== "off");
       const sVol = localStorage.getItem("setting_sound_volume");
       if (sVol) setSoundVolume(parseFloat(sVol));
-      
+
       setVoice(localStorage.getItem("setting_voice") !== "off");
       const vVol = localStorage.getItem("setting_voice_volume");
       if (vVol) setVoiceVolume(parseFloat(vVol));
@@ -132,7 +132,7 @@ export default function SettingsModal({
                     Cài đặt
                   </h2>
                 </div>
-                
+
                 {/* Mobile Close Button */}
                 <button
                   onClick={onClose}
@@ -157,7 +157,7 @@ export default function SettingsModal({
                     {section.label}
                   </button>
                 ))}
-                
+
                 {/* Mobile Logout Button */}
                 <button
                   onClick={onLogout}
@@ -247,7 +247,7 @@ export default function SettingsModal({
                     </motion.div>
                   )}
 
-                  {activeSection === "sound" as any && (
+                  {activeSection === ("sound" as any) && (
                     <motion.div
                       key="sound"
                       initial={{ opacity: 0, x: 10 }}
@@ -268,27 +268,47 @@ export default function SettingsModal({
                                 <Volume2 size={20} />
                               </div>
                               <div>
-                                <p className="font-bold text-slate-800">Hiệu ứng (Đúng/Sai)</p>
-                                <p className="text-xs text-slate-400 font-medium">Âm thanh khi trả lời flashcard</p>
+                                <p className="font-bold text-slate-800">
+                                  Hiệu ứng (Đúng/Sai)
+                                </p>
+                                <p className="text-xs text-slate-400 font-medium">
+                                  Âm thanh khi trả lời flashcard
+                                </p>
                               </div>
                             </div>
                             {/* Toggle switch */}
                             <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" checked={soundEffects} onChange={(e) => toggleSoundEffects(e.target.checked)} />
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={soundEffects}
+                                onChange={(e) =>
+                                  toggleSoundEffects(e.target.checked)
+                                }
+                              />
                               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
                           </div>
-                          
+
                           {soundEffects && (
                             <div className="px-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-slate-500">Âm lượng</span>
-                                <span className="text-xs font-bold text-indigo-600">{Math.round(soundVolume * 100)}%</span>
+                                <span className="text-xs font-bold text-slate-500">
+                                  Âm lượng
+                                </span>
+                                <span className="text-xs font-bold text-indigo-600">
+                                  {Math.round(soundVolume * 100)}%
+                                </span>
                               </div>
-                              <input 
-                                type="range" min="0" max="1" step="0.1" 
-                                value={soundVolume} 
-                                onChange={(e) => changeSoundVolume(parseFloat(e.target.value))}
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={soundVolume}
+                                onChange={(e) =>
+                                  changeSoundVolume(parseFloat(e.target.value))
+                                }
                                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                               />
                             </div>
@@ -303,27 +323,45 @@ export default function SettingsModal({
                                 <Volume2 size={20} />
                               </div>
                               <div>
-                                <p className="font-bold text-slate-800">Đọc từ vựng (Phát âm)</p>
-                                <p className="text-xs text-slate-400 font-medium">Tự động đọc tiếng Anh</p>
+                                <p className="font-bold text-slate-800">
+                                  Đọc từ vựng (Phát âm)
+                                </p>
+                                <p className="text-xs text-slate-400 font-medium">
+                                  Tự động đọc tiếng Anh
+                                </p>
                               </div>
                             </div>
                             {/* Toggle switch */}
                             <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" checked={voice} onChange={(e) => toggleVoice(e.target.checked)} />
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={voice}
+                                onChange={(e) => toggleVoice(e.target.checked)}
+                              />
                               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                           </div>
-                          
+
                           {voice && (
                             <div className="px-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-slate-500">Âm lượng phát âm</span>
-                                <span className="text-xs font-bold text-emerald-600">{Math.round(voiceVolume * 100)}%</span>
+                                <span className="text-xs font-bold text-slate-500">
+                                  Âm lượng phát âm
+                                </span>
+                                <span className="text-xs font-bold text-emerald-600">
+                                  {Math.round(voiceVolume * 100)}%
+                                </span>
                               </div>
-                              <input 
-                                type="range" min="0" max="1" step="0.1" 
-                                value={voiceVolume} 
-                                onChange={(e) => changeVoiceVolume(parseFloat(e.target.value))}
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={voiceVolume}
+                                onChange={(e) =>
+                                  changeVoiceVolume(parseFloat(e.target.value))
+                                }
                                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                               />
                             </div>
