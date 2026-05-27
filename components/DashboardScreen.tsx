@@ -677,7 +677,7 @@ export default function DashboardScreen({
                 : "bg-gradient-to-r from-indigo-50 to-purple-50"
           }`}
         >
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
               <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
                 {lbTab === "streak" ? (
@@ -705,7 +705,7 @@ export default function DashboardScreen({
             </div>
 
             {/* TAB BUTTONS */}
-            <div className="flex flex-wrap gap-1 bg-white/60 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm self-start overflow-x-auto hide-scroll w-full sm:w-auto">
+            <div className="flex flex-nowrap gap-1 bg-white/60 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm self-start overflow-x-auto hide-scroll w-full sm:w-auto">
               {[
                 { id: "streak", label: "Chuỗi lửa", icon: Flame },
                 { id: "vocab", label: "Tổng từ", icon: BookOpen },
