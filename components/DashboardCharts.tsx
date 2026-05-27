@@ -52,8 +52,8 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
           </div>
           <h3 className="font-bold text-slate-800">Từ vựng mới (7 ngày qua)</h3>
         </div>
-        <div className="h-[250px] w-full">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <div className="h-[250px] w-full min-h-[250px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={stats.chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis
@@ -87,11 +87,11 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
           </div>
           <h3 className="font-bold text-slate-800">Tỷ lệ ghi nhớ</h3>
         </div>
-        <div className="h-[250px] w-full flex items-center justify-center relative">
+        <div className="h-[300px] w-full flex items-center justify-center relative min-h-[300px]">
           {/* Decorative background glow behind the pie chart */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <PieChart>
               <defs>
                 <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -100,8 +100,8 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
               </defs>
               <Pie
                 data={pieData}
-                innerRadius={70}
-                outerRadius={95}
+                innerRadius={65}
+                outerRadius={90}
                 paddingAngle={6}
                 cornerRadius={8}
                 dataKey="value"
@@ -152,9 +152,10 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
                 }}
               />
               <Legend
-                verticalAlign="middle"
-                align="right"
-                layout="vertical"
+                verticalAlign="bottom"
+                align="center"
+                layout="horizontal"
+                wrapperStyle={{ paddingTop: "20px" }}
                 iconType="circle"
                 iconSize={10}
                 formatter={(value) => <span className="text-sm font-semibold text-slate-700 ml-1">{value}</span>}
