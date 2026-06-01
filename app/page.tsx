@@ -8,6 +8,7 @@ import {
   LogOut,
   GraduationCap,
   Settings,
+  Headphones,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
@@ -31,6 +32,7 @@ import StreakCelebration from "@/components/StreakCelebration";
 import AppTour from "@/components/AppTour";
 import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
+import ListeningScreen from "@/components/ListeningScreen";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -83,7 +85,7 @@ export default function EngMaster() {
     handleFlashcardAnswer,
   } = useVocabularies(selectedTopic, fetchTopics);
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening">("dashboard");
 
   // UI State for Modals
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
@@ -146,12 +148,13 @@ export default function EngMaster() {
           {[
             { id: "dashboard", label: "Tiến độ", icon: LayoutDashboard },
             { id: "topics", label: "Tài liệu", icon: BookOpen },
+            { id: "listening", label: "Luyện nghe", icon: Headphones },
             { id: "quiz", label: "Kiểm tra", icon: Gamepad2 },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => {
-                setActiveTab(tab.id as "dashboard" | "topics" | "quiz");
+                setActiveTab(tab.id as "dashboard" | "topics" | "quiz" | "listening");
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
@@ -275,6 +278,18 @@ export default function EngMaster() {
                 userCode={userCode}
                 onQuizCompleted={handleUpdateStreak}
               />
+            </motion.div>
+          )}
+
+          {activeTab === "listening" && (
+            <motion.div
+              key="listening"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ListeningScreen />
             </motion.div>
           )}
         </AnimatePresence>

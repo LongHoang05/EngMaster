@@ -10,6 +10,15 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   // devIndicators: false,
   turbopack: {},
+  serverExternalPackages: ["@xenova/transformers"],
+  webpack: (config) => {
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        "sharp$": false,
+        "onnxruntime-node$": false,
+    }
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);
