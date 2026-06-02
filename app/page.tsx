@@ -33,6 +33,7 @@ import AppTour from "@/components/AppTour";
 import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
 import ListeningScreen from "@/components/ListeningScreen";
+import OnlineUsersWidget from "@/components/OnlineUsersWidget";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -173,6 +174,7 @@ export default function EngMaster() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
+          <OnlineUsersWidget />
           <button
             onClick={() => setIsSettingsModalOpen(true)}
             className="p-2 md:p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-indigo-100"
