@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import AudioUploader from "@/components/AudioUploader";
 import LocalTranscriptViewer from "@/components/LocalTranscriptViewer";
 import CustomAudioPlayer from "@/components/CustomAudioPlayer";
-import { Loader2, BrainCircuit, Headphones } from "lucide-react";
+import { Loader2, BrainCircuit, Headphones, Languages } from "lucide-react";
 
 export default function ListeningPage() {
   const [isModelReady, setIsModelReady] = useState(false);
@@ -13,6 +13,8 @@ export default function ListeningPage() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcribeProgress, setTranscribeProgress] = useState(0);
   const [transcript, setTranscript] = useState<{text: string} | null>(null);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslatingAPI, setIsTranslatingAPI] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -107,8 +109,33 @@ export default function ListeningPage() {
   const handleTranscribe = (audioData: Float32Array) => {
     if (!isModelReady) return;
     setTranscript(null);
+    setTranslatedText(null);
     setTranscribeProgress(0);
     worker.current?.postMessage({ type: 'transcribe', audio: audioData });
+  };
+
+  const handleTranslate = async () => {
+    if (!transcript?.text) return;
+    setIsTranslatingAPI(true);
+    setTranslatedText(null);
+    try {
+      const response = await fetch('/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: transcript.text })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setTranslatedText(data.translation);
+      } else {
+        alert("Lỗi dịch: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Đã xảy ra lỗi khi gọi API dịch.");
+    } finally {
+      setIsTranslatingAPI(false);
+    }
   };
 
   return (
@@ -129,11 +156,11 @@ export default function ListeningPage() {
           </p>
         </div>
 
-        {/* Bố cục chia đôi cột khi ở màn hình lớn */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Bố cục chia 3 cột khi ở màn hình lớn */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* CỘT TRÁI: Uploader & Audio Player */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-4 space-y-6">
             {!isModelReady && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 flex flex-col items-center text-center w-full">
                 <BrainCircuit className="w-12 h-12 text-indigo-500 mb-4" />
@@ -207,14 +234,16 @@ export default function ListeningPage() {
             )}
           </div>
 
-          {/* CỘT PHẢI: Transcript */}
-          <div className="lg:col-span-7">
+          {/* CỘT GIỮA: Transcript */}
+          <div className="lg:col-span-4">
             {isModelReady && transcript && (
               <div className="h-full fade-in">
                 <LocalTranscriptViewer 
                   transcript={transcript} 
                   currentTime={currentTime}
                   onSeek={(time) => setSeekToTime(time)}
+                  onTranslate={handleTranslate}
+                  isTranslating={isTranslatingAPI}
                 />
               </div>
             )}
@@ -222,6 +251,42 @@ export default function ListeningPage() {
               <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
                 <BrainCircuit className="w-12 h-12 mb-4 opacity-20" />
                 <p>Tải file âm thanh và bấm Bóc băng để xem Transcript ở đây.</p>
+              </div>
+            )}
+          </div>
+
+          {/* CỘT PHẢI: Translation */}
+          <div className="lg:col-span-4">
+            {isModelReady && transcript && (
+              <div className="h-full fade-in">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3 shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      Bản dịch
+                    </h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                    {isTranslatingAPI ? (
+                      <div className="flex flex-col items-center justify-center h-full text-blue-500 gap-4">
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                        <span className="text-sm">Đang dịch qua AI...</span>
+                      </div>
+                    ) : translatedText ? (
+                      <div className="whitespace-pre-wrap">{translatedText}</div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-400 italic text-center gap-3">
+                        <Languages className="w-8 h-8 opacity-50" />
+                        <span>Bấm nút "Dịch" ở cột Transcript để xem bản dịch Tiếng Việt.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {isModelReady && !transcript && (
+              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
+                <Languages className="w-12 h-12 mb-4 opacity-20" />
+                <p>Bản dịch sẽ hiển thị ở đây.</p>
               </div>
             )}
           </div>

@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { Topic, Vocabulary } from "@/lib/types";
 import { playAudio, playSuccessSound, playFailSound, normalizeText } from "@/lib/utils";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 interface QuizContainerProps {
   topics: Topic[];
@@ -35,6 +36,15 @@ export default function QuizContainer({
   const [quizType, setQuizType] = useState("multiple_choice");
   const [questionCount, setQuestionCount] = useState(10);
   const [timeLimit, setTimeLimit] = useState(0); // seconds, 0 = infinite
+  const [playMode, setPlayMode] = useState<"practice" | "survival" | "time_attack">("practice");
+
+  // Game Stats
+  const [lives, setLives] = useState(3);
+  const [streak, setStreak] = useState(0);
+  const [highestStreak, setHighestStreak] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [endTime, setEndTime] = useState<number | null>(null);
+  const [wrongQuestions, setWrongQuestions] = useState<any[]>([]);
 
   // Quiz Data
   const [allWords, setAllWords] = useState<Vocabulary[]>([]);
@@ -71,6 +81,39 @@ export default function QuizContainer({
     }));
   };
 
+  // Bắt phím tắt A,B,C,D / 1,2,3,4
+  useEffect(() => {
+    if (quizState !== "playing" || isAnswered || quizType !== "multiple_choice") return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+      
+      const key = e.key.toLowerCase();
+      const options = questions[currentIndex]?.options;
+      if (!options || options.length === 0) return;
+
+      if (key === '1' || key === 'a') handleOptionClick(options[0]);
+      if (key === '2' || key === 'b') handleOptionClick(options[1]);
+      if (key === '3' || key === 'c') handleOptionClick(options[2]);
+      if (key === '4' || key === 'd') handleOptionClick(options[3]);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [quizState, isAnswered, currentIndex, questions, quizType]);
+
+  // Confetti effect on high score
+  useEffect(() => {
+    if (quizState === "result" && currentIndex > 0 && (score / currentIndex) >= 0.8) {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#f59e0b', '#ec4899']
+      });
+    }
+  }, [quizState, score, currentIndex]);
+
   useEffect(() => {
     if (quizState === "playing" && !isAnswered && inputRef.current) {
       inputRef.current.focus();
@@ -79,25 +122,84 @@ export default function QuizContainer({
 
   // Timer effect
   useEffect(() => {
+    let ctx: AudioContext | null = null;
+
     if (quizState === "playing" && timeLimit > 0) {
+      if (playMode === "time_attack") {
+        try {
+          ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        } catch (e) {}
+      }
+
       setTimeLeft(timeLimit);
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
+            setEndTime(Date.now());
             setQuizState("result");
             onQuizCompleted();
             toast.info("Hết thời gian!");
             return 0;
           }
+
+          // Phát âm thanh nhịp tim / tiếng đồng hồ điện ảnh
+          if (playMode === "time_attack" && ctx) {
+            try {
+              if (ctx.state === "suspended") ctx.resume();
+              
+              const isUrgent = prev <= 11;
+              
+              const playBeat = (urgent: boolean) => {
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                
+                // 1. Tiếng Bass dồn (Thump/Heartbeat - Căng thẳng)
+                const bass = ctx.createOscillator();
+                const bassGain = ctx.createGain();
+                bass.type = "sine";
+                bass.frequency.setValueAtTime(urgent ? 100 : 50, t);
+                bass.frequency.exponentialRampToValueAtTime(10, t + (urgent ? 0.2 : 0.4));
+                bassGain.gain.setValueAtTime(urgent ? 0.9 : 0.5, t);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, t + (urgent ? 0.2 : 0.4));
+                bass.connect(bassGain);
+                bassGain.connect(ctx.destination);
+                bass.start(t);
+                bass.stop(t + (urgent ? 0.2 : 0.4));
+
+                // 2. Tiếng Kim đồng hồ sắc lạnh (High Click)
+                const click = ctx.createOscillator();
+                const clickGain = ctx.createGain();
+                click.type = "square";
+                click.frequency.setValueAtTime(urgent ? 2000 : 1000, t);
+                clickGain.gain.setValueAtTime(urgent ? 0.15 : 0.05, t);
+                clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+                click.connect(clickGain);
+                clickGain.connect(ctx.destination);
+                click.start(t);
+                click.stop(t + 0.05);
+              };
+
+              // Nhịp đầu tiên của mỗi giây
+              playBeat(isUrgent);
+              
+              // 10 giây cuối: Nhịp tim đập nhanh gấp đôi (thêm 1 nhịp ở giữa giây)
+              if (isUrgent) {
+                setTimeout(() => playBeat(true), 400); 
+              }
+
+            } catch (e) {}
+          }
+
           return prev - 1;
         });
       }, 1000);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (ctx) ctx.close().catch(() => {});
     };
-  }, [quizState, timeLimit]);
+  }, [quizState, timeLimit, playMode]);
 
   const fetchWordsAndStartQuiz = async () => {
     setIsLoadingWords(true);
@@ -196,6 +298,18 @@ export default function QuizContainer({
     setIsAnswerCorrect(null);
     setSelectedAnswer(null);
     setInputText("");
+    
+    // Reset Game Stats
+    setLives(3);
+    setStreak(0);
+    setHighestStreak(0);
+    setStartTime(Date.now());
+    setEndTime(null);
+    setWrongQuestions([]);
+
+    // For time attack, force 60 seconds
+    if (playMode === "time_attack") setTimeLimit(60);
+
     setQuizState("playing");
   };
 
@@ -213,6 +327,7 @@ export default function QuizContainer({
     const isLast = currentIndex === newQuestions.length - 1;
 
     if (isLast) {
+      setEndTime(Date.now());
       setQuizState("result");
       onQuizCompleted();
     } else {
@@ -235,12 +350,30 @@ export default function QuizContainer({
     if (isCorrect) {
       playSuccessSound();
       if (questions[currentIndex].fails === 0) setScore((prev) => prev + 1);
+      setStreak((prev) => {
+        const n = prev + 1;
+        if (n > highestStreak) setHighestStreak(n);
+        return n;
+      });
     } else {
       playFailSound();
+      setStreak(0);
+      setWrongQuestions(prev => [...prev, { ...questions[currentIndex], userSelected: option }]);
+      if (playMode === "survival") {
+        setLives((prev) => prev - 1);
+      }
     }
 
     const delay = isCorrect ? 800 : 1500;
-    setTimeout(() => handleNextQuestion(isCorrect), delay);
+    setTimeout(() => {
+      if (playMode === "survival" && lives <= 1 && !isCorrect) {
+        setEndTime(Date.now());
+        setQuizState("result");
+        onQuizCompleted();
+        return;
+      }
+      handleNextQuestion(isCorrect);
+    }, delay);
   };
 
   const handleTypingSubmit = (e: React.FormEvent) => {
@@ -278,12 +411,30 @@ export default function QuizContainer({
     if (isCorrect) {
       playSuccessSound();
       if (currentQ.fails === 0) setScore((prev) => prev + 1);
+      setStreak((prev) => {
+        const n = prev + 1;
+        if (n > highestStreak) setHighestStreak(n);
+        return n;
+      });
     } else {
       playFailSound();
+      setStreak(0);
+      setWrongQuestions(prev => [...prev, { ...currentQ, userSelected: userAnswer }]);
+      if (playMode === "survival") {
+        setLives((prev) => prev - 1);
+      }
     }
 
     const delay = isCorrect ? 800 : 2000;
-    setTimeout(() => handleNextQuestion(isCorrect), delay);
+    setTimeout(() => {
+      if (playMode === "survival" && lives <= 1 && !isCorrect) {
+        setEndTime(Date.now());
+        setQuizState("result");
+        onQuizCompleted();
+        return;
+      }
+      handleNextQuestion(isCorrect);
+    }, delay);
   };
 
   if (quizState === "topic_selection") {
@@ -427,8 +578,23 @@ export default function QuizContainer({
           </div>
           <div>
             <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-              Số lượng câu hỏi
+              Chế độ chơi
             </label>
+            <select
+              value={playMode}
+              onChange={(e) => setPlayMode(e.target.value as any)}
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+            >
+              <option value="practice">🌱 Luyện tập (Cơ bản)</option>
+              <option value="survival">❤️ Sinh tồn (3 mạng)</option>
+              <option value="time_attack">⏱️ Tốc độ (60 giây)</option>
+            </select>
+          </div>
+          {playMode !== "time_attack" && (
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                Số lượng câu hỏi
+              </label>
             <select
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
@@ -441,22 +607,25 @@ export default function QuizContainer({
               <option value={9999}>♾️ Tất cả</option>
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-              Giới hạn thời gian
-            </label>
-            <select
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(Number(e.target.value))}
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
-            >
-              <option value={0}>♾️ Không giới hạn</option>
-              <option value={30}>⏱️ 30 giây</option>
-              <option value={60}>⏱️ 1 phút</option>
-              <option value={120}>⏱️ 2 phút</option>
-              <option value={300}>⏱️ 5 phút</option>
-            </select>
-          </div>
+          )}
+          {playMode === "practice" && (
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                Giới hạn thời gian
+              </label>
+              <select
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(Number(e.target.value))}
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+              >
+                <option value={0}>♾️ Không giới hạn</option>
+                <option value={30}>⏱️ 30 giây</option>
+                <option value={60}>⏱️ 1 phút</option>
+                <option value={120}>⏱️ 2 phút</option>
+                <option value={300}>⏱️ 5 phút</option>
+              </select>
+            </div>
+          )}
         </div>
         <div className="flex gap-4 justify-center">
           <button
@@ -486,6 +655,17 @@ export default function QuizContainer({
 
     return (
       <div className="max-w-2xl mx-auto animate-fade-in">
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+          }
+          .animate-shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+          }
+        `}} />
+        
         {/* Progress Bar */}
         <div className="w-full bg-slate-100 h-3 rounded-full mb-8 overflow-hidden flex shadow-inner">
           <div
@@ -504,10 +684,24 @@ export default function QuizContainer({
                 ⏱️ {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
               </span>
             )}
+            {playMode === "survival" && (
+              <span className="text-xs font-black text-rose-600 bg-rose-50 px-4 py-1.5 rounded-full flex items-center gap-1 border border-rose-100 shadow-sm uppercase tracking-wider">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <span key={i} className={i < lives ? "opacity-100" : "opacity-30 grayscale"}>❤️</span>
+                ))}
+              </span>
+            )}
           </div>
-          <span className="text-xs text-amber-600 font-black bg-amber-50 px-4 py-1.5 rounded-full border border-amber-100 shadow-sm flex items-center gap-2 uppercase tracking-wider">
-            Điểm: {score}
-          </span>
+          <div className="flex gap-2">
+            {streak >= 3 && (
+              <span className="text-xs text-orange-600 font-black bg-orange-50 px-4 py-1.5 rounded-full border border-orange-100 shadow-sm flex items-center gap-1 uppercase tracking-wider animate-bounce">
+                🔥 X{streak}
+              </span>
+            )}
+            <span className="text-xs text-amber-600 font-black bg-amber-50 px-4 py-1.5 rounded-full border border-amber-100 shadow-sm flex items-center gap-2 uppercase tracking-wider">
+              Điểm: {score}
+            </span>
+          </div>
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-10 md:p-14 text-center mb-8 relative overflow-hidden group">
@@ -550,21 +744,30 @@ export default function QuizContainer({
               if (isAnswered) {
                 if (opt === currentQ.correctAnswerText)
                   btnClass =
-                    "bg-green-100 border-green-500 text-green-800 font-bold shadow-green-100 shadow-lg";
+                    "bg-green-100 border-green-500 text-green-800 font-bold shadow-green-100 shadow-lg scale-[1.02] z-10";
                 else if (opt === selectedAnswer)
-                  btnClass = "bg-red-50 border-red-500 text-red-800 shadow-red-100";
+                  btnClass = "bg-red-50 border-red-500 text-red-800 shadow-red-100 animate-shake";
                 else
                   btnClass =
                     "bg-white border-slate-100 text-slate-300 opacity-40";
               }
+              
+              // Keyboard shortcut hints
+              const shortcutKey = ["1", "2", "3", "4"][idx];
+              
               return (
                 <button
                   key={idx}
                   disabled={isAnswered}
                   onClick={() => handleOptionClick(opt)}
-                  className={`p-5 rounded-2xl text-lg w-full transition-all duration-200 font-bold ${btnClass}`}
+                  className={`p-5 rounded-2xl text-lg w-full transition-all duration-300 font-bold relative flex items-center justify-between group ${btnClass}`}
                 >
-                  {opt}
+                  <span className="text-left w-full">{opt}</span>
+                  {!isAnswered && (
+                    <kbd className="hidden md:inline-block px-2 py-1 bg-slate-100 text-slate-400 rounded text-xs font-mono group-hover:bg-indigo-100 group-hover:text-indigo-500 transition-colors">
+                      {shortcutKey}
+                    </kbd>
+                  )}
                 </button>
               );
             })}
@@ -578,7 +781,7 @@ export default function QuizContainer({
               disabled={isAnswered}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className={`w-full p-5 rounded-2xl border-2 text-center text-2xl font-black outline-none transition-all shadow-inner ${isAnswered ? (isAnswerCorrect ? "border-green-500 bg-green-50 text-green-800" : "border-rose-500 bg-rose-50 text-rose-800") : "border-slate-200 focus:border-indigo-500 focus:shadow-indigo-100"}`}
+              className={`w-full p-5 rounded-2xl border-2 text-center text-2xl font-black outline-none transition-all shadow-inner ${isAnswered ? (isAnswerCorrect ? "border-green-500 bg-green-50 text-green-800 scale-[1.02]" : "border-rose-500 bg-rose-50 text-rose-800 animate-shake") : "border-slate-200 focus:border-indigo-500 focus:shadow-indigo-100"}`}
               placeholder="Nhập câu trả lời..."
             />
             {isAnswered && !isAnswerCorrect && (
@@ -605,47 +808,93 @@ export default function QuizContainer({
   if (quizState === "result") {
     const baseCount = Math.min(questionCount, allWords.length);
     const perfectRun = score === baseCount;
+    
+    const totalAttempted = Math.max(1, score + wrongQuestions.length);
+    const avgTime = startTime && endTime ? ((endTime - startTime) / 1000 / totalAttempted).toFixed(1) : 0;
 
     return (
-      <div className="max-w-xl mx-auto text-center bg-white p-12 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 animate-fade-in">
-        <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner ${perfectRun ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"}`}>
-          <Sparkles size={56} />
-        </div>
-        <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
-          {perfectRun ? "Kỷ lục hoàn hảo!" : "Đã hoàn thành thử thách!"}
-        </h2>
-        <div className="text-7xl font-black text-indigo-600 my-8 flex items-baseline justify-center gap-2">
-          {score} <span className="text-3xl text-slate-300 font-bold">/ {baseCount}</span>
-        </div>
-        <p className="text-lg text-slate-500 mb-10 leading-relaxed font-medium">
-          {perfectRun
-            ? "Đỉnh cao! Bạn đã trả lời đúng tất cả các câu hỏi ngay trong lượt đầu tiên."
-            : `Hệ thống đã hỗ trợ bạn ghi nhớ toàn bộ ${baseCount} từ vựng. Bạn cần thêm ${questions.length - baseCount} lượt nhắc lại để hoàn thành.`}
-        </p>
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
+      <div className="max-w-2xl mx-auto text-center animate-fade-in pb-10">
+        <div className="bg-white p-12 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 mb-8">
+          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner ${perfectRun ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"}`}>
+            <Sparkles size={56} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
+            {perfectRun ? "Kỷ lục hoàn hảo!" : playMode === "survival" && lives <= 0 ? "Thử thách Sinh tồn Thất bại!" : "Đã hoàn thành thử thách!"}
+          </h2>
+          <div className="text-7xl font-black text-indigo-600 mt-8 mb-4 flex items-baseline justify-center gap-2">
+            {score} <span className="text-3xl text-slate-300 font-bold">/ {baseCount}</span>
+          </div>
+          <p className="text-lg text-slate-500 mb-10 leading-relaxed font-medium">
+            {perfectRun
+              ? "Đỉnh cao! Bạn đã trả lời đúng tất cả các câu hỏi."
+              : playMode === "survival" && lives <= 0
+              ? `Bạn đã hết sạch mạng. Lần sau cẩn thận hơn nhé!`
+              : `Bạn đã ghi được điểm số ấn tượng.`}
+          </p>
+
+          {/* Gamified Analytics */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Tốc độ TB</p>
+              <p className="text-2xl font-black text-slate-700">{avgTime}s <span className="text-sm font-medium text-slate-400">/câu</span></p>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Chuỗi cao nhất</p>
+              <p className="text-2xl font-black text-orange-500">{highestStreak} 🔥</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              <button
+                onClick={() => generateQuiz(undefined, true)}
+                className="flex-1 py-4 bg-slate-100 text-slate-700 font-black rounded-2xl hover:bg-slate-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
+              >
+                Làm lại
+              </button>
+              <button
+                onClick={() => generateQuiz(undefined, false)}
+                className="flex-1 py-4 bg-indigo-100 text-indigo-700 font-black rounded-2xl hover:bg-indigo-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
+              >
+                {playMode === 'time_attack' ? "Chơi ván mới" : `Làm tiếp ${Math.min(questionCount, allWords.length)} câu`}
+              </button>
+            </div>
             <button
-              onClick={() => generateQuiz(undefined, true)}
-              className="flex-1 py-4 bg-slate-100 text-slate-700 font-black rounded-2xl hover:bg-slate-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
+              onClick={() => {
+                setQuizState("topic_selection");
+              }}
+              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 text-[15px] mt-2"
             >
-              Làm lại
-            </button>
-            <button
-              onClick={() => generateQuiz(undefined, false)}
-              className="flex-1 py-4 bg-indigo-100 text-indigo-700 font-black rounded-2xl hover:bg-indigo-200 transition-all text-[15px] shadow-sm active:scale-95 flex items-center justify-center gap-2"
-            >
-              Làm tiếp {Math.min(questionCount, allWords.length)} câu
+              Trở về màn hình chọn chủ đề
             </button>
           </div>
-          <button
-            onClick={() => {
-              setQuizState("topic_selection");
-            }}
-            className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 text-[15px] mt-2"
-          >
-            Trở về màn hình chọn chủ đề
-          </button>
         </div>
+
+        {wrongQuestions.length > 0 && (
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-left">
+            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+              <span className="bg-rose-100 text-rose-600 p-2 rounded-lg">🚨</span> 
+              Cần khắc phục ({wrongQuestions.length} câu)
+            </h3>
+            <div className="space-y-4">
+              {wrongQuestions.map((wq, idx) => (
+                <div key={idx} className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100">
+                  <p className="font-bold text-slate-800 text-lg mb-1">{wq.promptText}</p>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 mt-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black bg-rose-100 text-rose-600 px-2 py-0.5 rounded">Bạn chọn</span>
+                      <span className="text-rose-700 font-medium line-through">{wq.userSelected || "Trống"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black bg-green-100 text-green-700 px-2 py-0.5 rounded">Đáp án đúng</span>
+                      <span className="text-green-700 font-bold">{wq.correctAnswerText}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

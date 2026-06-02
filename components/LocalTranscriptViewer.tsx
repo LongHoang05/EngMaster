@@ -1,13 +1,15 @@
 import React from "react";
-import { Copy, CheckCircle2 } from "lucide-react";
+import { Copy, CheckCircle2, Languages, Loader2 } from "lucide-react";
 
 interface TranscriptViewerProps {
   transcript: { text: string } | null;
   currentTime?: number;
   onSeek?: (time: number) => void;
+  onTranslate?: () => void;
+  isTranslating?: boolean;
 }
 
-export default function LocalTranscriptViewer({ transcript, currentTime = 0, onSeek }: TranscriptViewerProps) {
+export default function LocalTranscriptViewer({ transcript, currentTime = 0, onSeek, onTranslate, isTranslating }: TranscriptViewerProps) {
   const [copied, setCopied] = React.useState(false);
 
   const handleCopy = () => {
@@ -69,13 +71,25 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
           Transcript
         </h3>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-        >
-          {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          {copied ? "Đã chép" : "Copy"}
-        </button>
+        <div className="flex items-center gap-2">
+          {onTranslate && (
+            <button
+              onClick={onTranslate}
+              disabled={isTranslating}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shadow-sm"
+            >
+              {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
+              {isTranslating ? "Đang dịch..." : "Dịch"}
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+          >
+            {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? "Đã chép" : "Copy"}
+          </button>
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-700 dark:text-gray-300 leading-relaxed font-medium relative">
