@@ -94,9 +94,29 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
         case 'complete':
           setIsTranscribing(false);
           let finalResult = e.data.output;
+          console.log("Transcription raw output:", finalResult);
+          
+          if (!finalResult || (Array.isArray(finalResult) && finalResult.length === 0)) {
+            toast.error("Bóc băng thất bại: Không có dữ liệu trả về (File có thể quá dài hoặc không có tiếng).");
+            setTranscript(null);
+            break;
+          }
+
           if (Array.isArray(finalResult)) {
             finalResult = finalResult[0];
           }
+          
+          // Fallback if it returns just a string
+          if (typeof finalResult === 'string') {
+            finalResult = { text: finalResult, chunks: [] };
+          }
+
+          if (!finalResult || (!finalResult.text && !finalResult.chunks)) {
+            toast.error("Bóc băng thất bại: Không nhận diện được giọng nói.");
+            setTranscript(null);
+            break;
+          }
+
           setTranscript(finalResult);
           toast.success("Bóc băng thành công!");
           break;
