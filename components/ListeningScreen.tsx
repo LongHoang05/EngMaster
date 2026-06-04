@@ -146,7 +146,8 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
     setTranscript(null);
     setTranslatedText(null);
     setTranscribeProgress(0);
-    worker.current?.postMessage({ type: 'transcribe', audio: audioData });
+    // Use Transferable Objects to prevent cloning the audio array in memory
+    worker.current?.postMessage({ type: 'transcribe', audio: audioData }, [audioData.buffer]);
   };
 
   const handleTranslate = async () => {
