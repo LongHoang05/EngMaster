@@ -20,17 +20,25 @@ interface QuizContainerProps {
   topics: Topic[];
   userCode: string;
   onQuizCompleted: () => void;
+  onUnsavedChange?: (isUnsaved: boolean) => void;
 }
 
 export default function QuizContainer({
   topics,
   userCode,
   onQuizCompleted,
+  onUnsavedChange,
 }: QuizContainerProps) {
   const [quizState, setQuizState] = useState<
     "topic_selection" | "config" | "playing" | "result"
   >("topic_selection");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (onUnsavedChange) {
+      onUnsavedChange(quizState === "playing");
+    }
+  }, [quizState, onUnsavedChange]);
 
   // Quiz Configs
   const [quizType, setQuizType] = useState("multiple_choice");

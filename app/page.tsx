@@ -87,6 +87,7 @@ export default function EngMaster() {
   } = useVocabularies(selectedTopic, fetchTopics);
 
   const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening">("dashboard");
+  const [unsavedTabs, setUnsavedTabs] = useState<Record<string, boolean>>({});
 
   // UI State for Modals
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
@@ -155,6 +156,12 @@ export default function EngMaster() {
             <button
               key={tab.id}
               onClick={() => {
+                if (activeTab === tab.id) return;
+                if (unsavedTabs[activeTab]) {
+                  const confirm = window.confirm("Bạn đang có tiến trình chưa hoàn thành. Bạn có chắc chắn muốn chuyển trang không? Dữ liệu hiện tại sẽ bị mất.");
+                  if (!confirm) return;
+                  setUnsavedTabs(prev => ({ ...prev, [activeTab]: false }));
+                }
                 setActiveTab(tab.id as "dashboard" | "topics" | "quiz" | "listening");
                 setSelectedTopic(null);
                 setViewMode("list");
@@ -279,6 +286,7 @@ export default function EngMaster() {
                 topics={topics}
                 userCode={userCode}
                 onQuizCompleted={handleUpdateStreak}
+                onUnsavedChange={(isUnsaved) => setUnsavedTabs(prev => ({ ...prev, quiz: isUnsaved }))}
               />
             </motion.div>
           )}
@@ -291,7 +299,9 @@ export default function EngMaster() {
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
             >
-              <ListeningScreen />
+              <ListeningScreen 
+                onUnsavedChange={(isUnsaved) => setUnsavedTabs(prev => ({ ...prev, listening: isUnsaved }))}
+              />
             </motion.div>
           )}
         </AnimatePresence>

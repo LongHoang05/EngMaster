@@ -6,7 +6,11 @@ import LocalTranscriptViewer from "@/components/LocalTranscriptViewer";
 import CustomAudioPlayer from "@/components/CustomAudioPlayer";
 import { Loader2, BrainCircuit, Headphones, Languages } from "lucide-react";
 
-export default function ListeningPage() {
+interface ListeningScreenProps {
+  onUnsavedChange?: (isUnsaved: boolean) => void;
+}
+
+export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps = {}) {
   const [isModelReady, setIsModelReady] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [modelProgress, setModelProgress] = useState<{file: string, progress: number, loaded?: number, total?: number}[]>([]);
@@ -20,6 +24,15 @@ export default function ListeningPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [seekToTime, setSeekToTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Reset transcript và bản dịch khi người dùng chọn file âm thanh mới
+    setTranscript(null);
+    setTranslatedText(null);
+    if (onUnsavedChange) {
+      onUnsavedChange(file !== null);
+    }
+  }, [file, onUnsavedChange]);
 
   const worker = useRef<Worker | null>(null);
 
