@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -88,6 +88,14 @@ export default function EngMaster() {
 
   const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening">("dashboard");
   const [unsavedTabs, setUnsavedTabs] = useState<Record<string, boolean>>({});
+
+  const handleQuizUnsavedChange = useCallback((isUnsaved: boolean) => {
+    setUnsavedTabs(prev => ({ ...prev, quiz: isUnsaved }));
+  }, []);
+
+  const handleListeningUnsavedChange = useCallback((isUnsaved: boolean) => {
+    setUnsavedTabs(prev => ({ ...prev, listening: isUnsaved }));
+  }, []);
 
   // UI State for Modals
   const [isAddTopicModalOpen, setIsAddTopicModalOpen] = useState(false);
@@ -286,7 +294,7 @@ export default function EngMaster() {
                 topics={topics}
                 userCode={userCode}
                 onQuizCompleted={handleUpdateStreak}
-                onUnsavedChange={(isUnsaved) => setUnsavedTabs(prev => ({ ...prev, quiz: isUnsaved }))}
+                onUnsavedChange={handleQuizUnsavedChange}
               />
             </motion.div>
           )}
@@ -300,7 +308,7 @@ export default function EngMaster() {
               transition={{ duration: 0.2 }}
             >
               <ListeningScreen 
-                onUnsavedChange={(isUnsaved) => setUnsavedTabs(prev => ({ ...prev, listening: isUnsaved }))}
+                onUnsavedChange={handleListeningUnsavedChange}
               />
             </motion.div>
           )}
