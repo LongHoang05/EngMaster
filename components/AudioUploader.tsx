@@ -48,7 +48,15 @@ export default function AudioUploader({
       // Use AudioContext to decode audio to PCM float32 array
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const audioData = audioBuffer.getChannelData(0); // get mono channel
+      // Safely mix all channels to mono to avoid missing audio
+      const channels = audioBuffer.numberOfChannels;
+      const audioData = new Float32Array(audioBuffer.length);
+      for (let i = 0; i < channels; i++) {
+        const channelData = audioBuffer.getChannelData(i);
+        for (let j = 0; j < audioBuffer.length; j++) {
+          audioData[j] += channelData[j] / channels;
+        }
+      }
       onTranscribe(audioData);
     } catch (e) {
       console.error("Audio decode error:", e);
