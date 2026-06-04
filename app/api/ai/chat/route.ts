@@ -1,10 +1,25 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const rateLimitResult = checkRateLimit(ip, 15, 60000); // 15 requests per minute
+    
+    if (!rateLimitResult.success) {
+      return new Response(JSON.stringify({ error: "Too many requests. Vui lòng chậm lại và chờ 1 phút." }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        },
+      });
+    }
+
     const { messages, vocabContext, topicName } = await req.json();
 
     const systemPrompt = `Bạn là một gia sư Tiếng Anh thân thiện tên là "AI English Tutor". Nhiệm vụ của bạn là giúp người dùng luyện tập Tiếng Anh thông qua các tình huống nhập vai (role-play).
