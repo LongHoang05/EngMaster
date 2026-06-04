@@ -81,7 +81,7 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
     return `${m}:${s}`;
   };
 
-  const speeds = [0.75, 1, 1.25, 1.5];
+  const speeds = [0.5, 0.75, 1, 1.25, 1.5];
 
   // Bắt sự kiện bàn phím (Keyboard shortcuts)
   useEffect(() => {
