@@ -5,6 +5,7 @@ import AudioUploader from "@/components/AudioUploader";
 import LocalTranscriptViewer from "@/components/LocalTranscriptViewer";
 import CustomAudioPlayer from "@/components/CustomAudioPlayer";
 import { Loader2, BrainCircuit, Headphones, Languages } from "lucide-react";
+import { toast } from "sonner";
 
 interface ListeningScreenProps {
   onUnsavedChange?: (isUnsaved: boolean) => void;
@@ -97,12 +98,13 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
             finalResult = finalResult[0];
           }
           setTranscript(finalResult);
+          toast.success("Bóc băng thành công!");
           break;
         case 'error':
           console.error(e.data.error);
           setIsTranscribing(false);
           setIsModelLoading(false);
-          alert("Lỗi: " + e.data.error);
+          toast.error("Lỗi: " + (e.data.error || "Không thể bóc băng"));
           break;
       }
     };
