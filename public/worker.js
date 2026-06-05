@@ -24,17 +24,18 @@ class PipelineSingleton {
         console.log("pipeline() loaded successfully with WebGPU");
       } catch (err) {
         console.warn("WebGPU initialization failed or not supported. Falling back to CPU (WASM)...", err);
-        // Fallback to WASM
-        this.instance = pipeline(this.task, this.model, { 
-          device: 'wasm',
-          progress_callback 
-        });
-        await this.instance;
-        console.log("pipeline() loaded successfully with CPU (WASM)");
-      }
-      } catch (err) {
-        console.error("pipeline() failed:", err);
-        throw err;
+        try {
+          // Fallback to WASM
+          this.instance = pipeline(this.task, this.model, { 
+            device: 'wasm',
+            progress_callback 
+          });
+          await this.instance;
+          console.log("pipeline() loaded successfully with CPU (WASM)");
+        } catch (fallbackErr) {
+          console.error("pipeline() failed completely:", fallbackErr);
+          throw fallbackErr;
+        }
       }
     }
     return this.instance;
