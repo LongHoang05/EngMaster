@@ -34,35 +34,55 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
   // Hàm format chuyên biệt cho các bài nghe TOEIC/IELTS
   const formatText = (text: string) => {
     if (!text) return text;
-    let formatted = text;
+    let formatted = text.trim();
     
-    // 1. Tách dòng cho các lựa chọn A, B, C, D (ví dụ: " A. ", " B. ")
-    formatted = formatted.replace(/(^|\s)([A-D]\.)\s/g, '$1\n$2 ');
+    // 1. Tách dòng cho các lựa chọn A, B, C, D (Bắt dạng A., A,, (A), v.v.)
+    // Không dùng /i để tránh bắt nhầm chữ "a" trong câu.
+    formatted = formatted.replace(/(^|\s+)(\(?[A-D]\)?)([.,:]?)\s+/g, '\n$2. ');
 
-    // 2. Tách dòng cho từ khóa câu hỏi TOEIC quen thuộc (Number X, Question X)
-    // Dấu ? ở cuối \.? giúp bắt được cả trường hợp có hoặc không có dấu chấm (VD: "Number 11" hoặc "Number 11.")
-    formatted = formatted.replace(/(^|\s)(Number\s\d+\.?|Question\s\d+\.?)/gi, '$1\n$2');
+    // 2. Tách dòng cho từ khóa câu hỏi (Number 9, Question 10)
+    formatted = formatted.replace(/(^|\s+)(Number|Question)\s+([a-zA-Z0-9]+)[.,:]?\s+/gi, '\n\n$2 $3. ');
 
-    // 3. Tách dòng cho lời dẫn TOEIC (Questions 71 through 73 refer to...)
-    formatted = formatted.replace(/(^|\s)(Questions\s\d+\sthrough\s\d+\srefer\sto)/gi, '$1\n$2');
-
-    // 4. Tách dòng cho các con số đếm độc lập (VD: "1. ", "20. ") 
-    // Chỉ tách nếu nó nằm đầu câu hoặc sau dấu chấm kết thúc câu để tránh cắt nhầm số đếm bình thường.
-    formatted = formatted.replace(/(^|[.?!]\s+)(\d+\.)\s/g, '$1\n$2 ');
+    // 3. Tách dòng cho các con số đếm độc lập (VD: "7. ", "104. ")
+    // Chỉ bắt khi nó đứng đầu câu hoặc sau một dấu kết thúc câu
+    formatted = formatted.replace(/(^|[.?!]\s+)(\d{1,3})([.,:])\s+/g, '\n\n$2. ');
 
     // Xóa các dấu xuống dòng kép (nếu có do regex chồng chéo)
     return formatted.replace(/\n\s*\n/g, '\n').trim();
   };
 
-  // Hàm render text để hỗ trợ click-to-play nhưng không bôi đen tra từ nữa
+  // Hàm render text để hỗ trợ click-to-play và in đậm các từ khóa
   const renderInteractiveText = (text: string) => {
-    return text.split('\n').map((line, lineIdx) => (
-      <span key={lineIdx} className={lineIdx > 0 ? "block mt-2" : ""}>
-        {line.split(" ").map((word, idx) => (
-          <span key={idx}>{word} </span>
-        ))}
-      </span>
-    ));
+    return text.split('\n').map((line, lineIdx) => {
+      const words = line.trim().split(" ");
+      if (words.length === 0 || (words.length === 1 && words[0] === "")) return null;
+
+      // Nhận diện xem dòng này có bắt đầu bằng Marker (A., B., 7., Number 9.) không
+      let markerWordCount = 0;
+      if (/^(\(?[A-D]\)?\.)/.test(words[0])) {
+        markerWordCount = 1; // In đậm 1 từ (A.)
+      } else if (/^(\d{1,3}\.)/.test(words[0])) {
+        markerWordCount = 1; // In đậm 1 từ (7.)
+      } else if (/^(Number|Question)/i.test(words[0]) && words[1] && /^[a-zA-Z0-9]+\./.test(words[1])) {
+        markerWordCount = 2; // In đậm 2 từ (Number 9.)
+      }
+
+      return (
+        <span key={lineIdx} className={lineIdx > 0 ? "block mt-2" : "block"}>
+          {words.map((word, idx) => {
+            const isBold = idx < markerWordCount;
+            return (
+              <span 
+                key={idx} 
+                className={`transition-colors rounded px-[1px] ${isBold ? "font-bold text-gray-900 dark:text-white" : ""}`}
+              >
+                {word}{" "}
+              </span>
+            );
+          })}
+        </span>
+      );
+    });
   };
 
   return (
