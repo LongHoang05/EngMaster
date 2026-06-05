@@ -58,10 +58,35 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
         }
         i++;
       }
+
+      // Xử lý trường hợp "Marker" bị dính vào cuối chunk hiện tại thay vì đầu chunk tiếp theo
+      // Ví dụ: Chunk 1: "Yes we will do it tomorrow. B." | Chunk 2: "Yes we should offer..."
+      // Ta sẽ bứng "B." từ Chunk 1 quăng sang đầu Chunk 2.
+      const endsWithMarkerMatch = current.text.match(/(^|\s+)(\(?[A-D]\)?[.,:]?)$/);
+      if (endsWithMarkerMatch && i < chunks.length - 1) {
+        const marker = endsWithMarkerMatch[2]; // VD: "B."
+        current.text = current.text.slice(0, -endsWithMarkerMatch[0].length).trim();
+        
+        // Gắn vào đầu chunk tiếp theo
+        const next = chunks[i + 1];
+        chunks[i + 1] = { ...next, text: marker + " " + next.text.trim() };
+      }
+
       merged.push(current);
     }
     return merged;
   }, [transcript, hasChunks]);
+
+  // Tiện ích chuyển đổi chữ số tiếng Anh sang số
+  const wordToDigit = (word: string) => {
+    const map: Record<string, string> = {
+      one: "1", two: "2", three: "3", four: "4", five: "5",
+      six: "6", seven: "7", eight: "8", nine: "9", ten: "10",
+      eleven: "11", twelve: "12", thirteen: "13", fourteen: "14", fifteen: "15",
+      sixteen: "16", seventeen: "17", eighteen: "18", nineteen: "19", twenty: "20"
+    };
+    return map[word.toLowerCase()] || word;
+  };
 
   // Hàm format chuyên biệt cho các bài nghe TOEIC/IELTS
   const formatText = (text: string) => {
@@ -70,10 +95,12 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
     
     // 1. Tách dòng cho các lựa chọn A, B, C, D (Bắt dạng A., A,, (A), v.v.)
     // Không dùng /i để tránh bắt nhầm chữ "a" trong câu.
-    formatted = formatted.replace(/(^|\s+)(\(?[A-D]\)?)([.,:]?)\s+/g, '\n$2. ');
+    formatted = formatted.replace(/(^|\s+)(\(?[A-D]\)?)([.,:]?)(\s+|$)/g, '\n$2. ');
 
-    // 2. Tách dòng cho từ khóa câu hỏi (Number 9, Question 10)
-    formatted = formatted.replace(/(^|\s+)(Number|Question)\s+([a-zA-Z0-9]+)[.,:]?\s+/gi, '\n\n$2 $3. ');
+    // 2. Tách dòng cho từ khóa câu hỏi (Biến đổi "Number nine." thành "9.")
+    formatted = formatted.replace(/(^|\s+)(Number|Question)\s+([a-zA-Z0-9]+)[.,:]?\s+/gi, (match, p1, p2, p3) => {
+      return `${p1}\n\n${wordToDigit(p3)}. `;
+    });
 
     // 3. Tách dòng cho các con số đếm độc lập (VD: "7. ", "104. ")
     // Chỉ bắt khi nó đứng đầu câu hoặc sau một dấu kết thúc câu
