@@ -118,8 +118,23 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
     return formatted.replace(/\n\s*\n/g, '\n').trim();
   };
 
-  // Hàm render text để hỗ trợ click-to-play và in đậm các từ khóa
-  const renderInteractiveText = (text: string) => {
+  // Hàm render text để hỗ trợ click-to-play và in đậm các từ khóa (Karaoke Mode)
+  const renderInteractiveText = (
+    text: string, 
+    chunkStart: number, 
+    chunkEnd: number, 
+    currentTime: number, 
+    isChunkActive: boolean,
+    onSeek?: (time: number) => void
+  ) => {
+    // Đếm tổng số lượng từ thực sự trong khối để chia thời gian
+    const allWords = text.replace(/\n/g, ' ').split(/\s+/).filter(w => w.trim() !== "");
+    const totalWords = allWords.length;
+    const duration = chunkEnd - chunkStart;
+    const timePerWord = totalWords > 0 ? duration / totalWords : 0;
+    
+    let globalWordIdx = 0;
+
     return text.split('\n').map((line, lineIdx) => {
       const words = line.trim().split(" ");
       if (words.length === 0 || (words.length === 1 && words[0] === "")) return null;
@@ -137,11 +152,35 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
       return (
         <span key={lineIdx} className={lineIdx > 0 ? "block mt-2" : "block"}>
           {words.map((word, idx) => {
+            if (word.trim() === "") return null;
+            
             const isBold = idx < markerWordCount;
+            const wordStart = chunkStart + (globalWordIdx * timePerWord);
+            const wordEnd = wordStart + timePerWord;
+            
+            // Karaoke logic:
+            const isWordActive = currentTime >= wordStart && currentTime < wordEnd;
+            const hasBeenSpoken = currentTime >= wordEnd;
+            
+            globalWordIdx++;
+
             return (
               <span 
                 key={idx} 
-                className={`transition-colors rounded px-[1px] ${isBold ? "font-bold text-gray-900 " : ""}`}
+                onClick={(e) => {
+                  if (onSeek) {
+                    e.stopPropagation(); // Ngăn click của cha
+                    onSeek(wordStart);
+                  }
+                }}
+                className={`
+                  cursor-pointer transition-colors duration-150 rounded px-[2px]
+                  ${isBold ? "font-bold text-gray-900" : ""} 
+                  ${isChunkActive && isWordActive ? "bg-blue-200/60 text-blue-800 font-medium" : ""}
+                  ${isChunkActive && !isWordActive && hasBeenSpoken && !isBold ? "text-gray-900" : ""}
+                  ${isChunkActive && !isWordActive && !hasBeenSpoken && !isBold ? "text-gray-400" : ""}
+                  hover:bg-blue-100
+                `}
               >
                 {word}{" "}
               </span>
@@ -203,7 +242,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
                     </span>
                   )}
                   <span className={`flex-1 ${isActive ? "text-gray-900 " : ""}`}>
-                    {renderInteractiveText(formatText(chunk.text))}
+                    {renderInteractiveText(formatText(chunk.text), start, end, currentTime, isActive, onSeek)}
                   </span>
                 </div>
               );
@@ -212,7 +251,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
         ) : (
           <div className="whitespace-pre-wrap">
             {formatText(transcript.text) 
-              ? renderInteractiveText(formatText(transcript.text)) 
+              ? renderInteractiveText(formatText(transcript.text), 0, 9999, currentTime, false, onSeek) 
               : <span className="text-gray-400 italic">Không tìm thấy giọng nói nào trong đoạn âm thanh này...</span>}
           </div>
         )}
