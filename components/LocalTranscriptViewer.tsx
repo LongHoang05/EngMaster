@@ -31,6 +31,38 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
 
   const hasChunks = (transcript as any).chunks && Array.isArray((transcript as any).chunks) && (transcript as any).chunks.length > 0;
 
+  // Tiền xử lý (Pre-process) các chunks để gộp các ký hiệu (A., 7., Number 9.) bị rớt xuống dòng
+  // Whisper thỉnh thoảng sẽ tách "7." ra một chunk riêng, và "Where can I find..." ra một chunk riêng
+  // Ta cần gộp chúng lại để hiển thị trên cùng 1 dòng cho đẹp mắt.
+  const processedChunks = React.useMemo(() => {
+    if (!hasChunks) return [];
+    const chunks = [...(transcript as any).chunks];
+    const merged = [];
+    
+    const isDangling = (text: string) => {
+      const t = text.trim();
+      return /^[A-D][.,:]?$/i.test(t) || 
+             /^\(?[A-D]\)?$/i.test(t) ||
+             /^\d{1,3}[.,:]?$/.test(t) ||
+             /^(Number|Question)\s+[a-zA-Z0-9]+[.,:]?$/i.test(t);
+    };
+
+    for (let i = 0; i < chunks.length; i++) {
+      let current = { ...chunks[i] };
+      
+      while (i < chunks.length - 1 && isDangling(current.text)) {
+        const next = chunks[i + 1];
+        current.text = current.text + " " + next.text.trim();
+        if (current.timestamp && next.timestamp) {
+          current.timestamp = [current.timestamp[0], next.timestamp[1] || next.timestamp[0]];
+        }
+        i++;
+      }
+      merged.push(current);
+    }
+    return merged;
+  }, [transcript, hasChunks]);
+
   // Hàm format chuyên biệt cho các bài nghe TOEIC/IELTS
   const formatText = (text: string) => {
     if (!text) return text;
@@ -115,7 +147,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-700 dark:text-gray-300 leading-relaxed font-medium relative">
         {hasChunks ? (
           <div className="space-y-3">
-            {(transcript as any).chunks.map((chunk: any, i: number) => {
+            {processedChunks.map((chunk: any, i: number) => {
               const start = chunk.timestamp?.[0] || 0;
               const end = chunk.timestamp?.[1] || 9999;
               const isActive = currentTime >= start && currentTime <= end;
