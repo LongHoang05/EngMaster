@@ -47,10 +47,18 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
              /^(Number|Question)\s+[a-zA-Z0-9]+[.,:]?$/i.test(t);
     };
 
+    // Nhận diện nếu một chunk bắt đầu bằng chữ thường (lowercase)
+    // Chứng tỏ nó là đoạn giữa của một câu bị cắt làm đôi do người đọc ngừng thở (pause)
+    const startsWithLowercase = (text: string) => {
+      return /^["'\s]*[a-z]/.test(text.trim());
+    };
+
     for (let i = 0; i < chunks.length; i++) {
       let current = { ...chunks[i] };
       
-      while (i < chunks.length - 1 && isDangling(current.text)) {
+      // Gộp chunk nếu chunk hiện tại là dangling marker, 
+      // HOẶC chunk tiếp theo là một đoạn bị cắt dở (bắt đầu bằng chữ thường)
+      while (i < chunks.length - 1 && (isDangling(current.text) || startsWithLowercase((transcript as any).chunks[i + 1].text))) {
         const next = chunks[i + 1];
         current.text = current.text + " " + next.text.trim();
         if (current.timestamp && next.timestamp) {
