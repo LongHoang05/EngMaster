@@ -106,7 +106,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
             return (
               <span 
                 key={idx} 
-                className={`transition-colors rounded px-[1px] ${isBold ? "font-bold text-gray-900 dark:text-white" : ""}`}
+                className={`transition-colors rounded px-[1px] ${isBold ? "font-bold text-gray-900 " : ""}`}
               >
                 {word}{" "}
               </span>
@@ -118,9 +118,9 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
-      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3 shrink-0">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+    <div className="bg-white  rounded-xl shadow-lg border border-gray-100  p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
+      <div className="flex items-center justify-between border-b border-gray-100  pb-3 shrink-0">
+        <h3 className="text-lg font-semibold text-gray-800 ">
           Transcript
         </h3>
         <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
           )}
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600  hover:bg-gray-100 :bg-gray-700 rounded-md transition-colors"
           >
             {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             {copied ? "Đã chép" : "Copy"}
@@ -144,7 +144,7 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-700 dark:text-gray-300 leading-relaxed font-medium relative">
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50  rounded-lg text-gray-700  leading-relaxed font-medium relative">
         {hasChunks ? (
           <div className="space-y-3">
             {processedChunks.map((chunk: any, i: number) => {
@@ -158,16 +158,16 @@ export default function LocalTranscriptViewer({ transcript, currentTime = 0, onS
                   onClick={() => onSeek && chunk.timestamp && onSeek(chunk.timestamp[0])}
                   className={`flex flex-col sm:flex-row sm:gap-4 p-3 -mx-2 rounded-lg transition-all cursor-pointer border-l-4 ${
                     isActive 
-                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-500" 
-                      : "border-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-blue-50  border-blue-500" 
+                      : "border-transparent hover:bg-gray-100 :bg-gray-800"
                   }`}
                 >
                   {chunk.timestamp && (
-                    <span className={`font-mono text-sm shrink-0 mt-1 sm:mt-0 ${isActive ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-gray-400 dark:text-gray-500"}`}>
+                    <span className={`font-mono text-sm shrink-0 mt-1 sm:mt-0 ${isActive ? "text-blue-600  font-semibold" : "text-gray-400 "}`}>
                       [{formatTime(chunk.timestamp[0])}]
                     </span>
                   )}
-                  <span className={`flex-1 ${isActive ? "text-gray-900 dark:text-white" : ""}`}>
+                  <span className={`flex-1 ${isActive ? "text-gray-900 " : ""}`}>
                     {renderInteractiveText(formatText(chunk.text))}
                   </span>
                 </div>

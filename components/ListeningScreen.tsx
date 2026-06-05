@@ -175,19 +175,19 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50  py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         
         <div className="text-center space-y-4 mb-10">
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full">
-              <Headphones className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+            <div className="p-4 bg-blue-100  rounded-full">
+              <Headphones className="w-10 h-10 text-blue-600 " />
             </div>
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-extrabold text-gray-900 ">
             Học Nghe & Bóc Băng
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-gray-500  max-w-2xl mx-auto">
             Tải lên file âm thanh tiếng Anh. Công cụ AI chạy trực tiếp trên trình duyệt của bạn sẽ chuyển đổi âm thanh thành văn bản hoàn toàn miễn phí và bảo mật.
           </p>
         </div>
@@ -198,12 +198,12 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
           {/* CỘT TRÁI: Uploader & Audio Player */}
           <div className="lg:col-span-4 space-y-6">
             {!isModelReady && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 flex flex-col items-center text-center w-full">
+              <div className="bg-white  rounded-xl shadow-sm border border-gray-100  p-8 flex flex-col items-center text-center w-full">
                 <BrainCircuit className="w-12 h-12 text-indigo-500 mb-4" />
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                <h2 className="text-xl font-bold text-gray-800  mb-2">
                   Chuẩn bị mô hình AI
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+                <p className="text-gray-600  mb-6 text-sm">
                   Lần đầu tiên sử dụng, trình duyệt cần tải một phần mềm AI nhỏ (~75MB) về máy. Việc này chỉ xảy ra một lần.
                 </p>
                 {isModelLoading ? (
@@ -214,7 +214,7 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
                     </div>
                     
                     <div className="space-y-1">
-                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 font-medium">
+                      <div className="flex justify-between text-sm text-gray-600  font-medium">
                         <span>Đang nạp bộ xử lý AI...</span>
                         <span>
                           {(() => {
@@ -224,7 +224,7 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
                           })()}%
                         </span>
                       </div>
-                      <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-2 w-full bg-gray-200  rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-indigo-500 transition-all duration-300 ease-out" 
                           style={{ 
@@ -284,7 +284,7 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
               </div>
             )}
             {isModelReady && !transcript && (
-              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
+              <div className="bg-gray-50/50  rounded-xl border border-dashed border-gray-200  h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
                 <BrainCircuit className="w-12 h-12 mb-4 opacity-20" />
                 <p>Tải file âm thanh và bấm Bóc băng để xem Transcript ở đây.</p>
               </div>
@@ -295,13 +295,13 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
           <div className="lg:col-span-4">
             {isModelReady && transcript && (
               <div className="h-full fade-in">
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
-                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3 shrink-0">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                <div className="bg-white  rounded-xl shadow-lg border border-gray-100  p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
+                  <div className="flex items-center justify-between border-b border-gray-100  pb-3 shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800 ">
                       Bản dịch
                     </h3>
                   </div>
-                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-2 bg-gray-50  rounded-lg text-gray-700  leading-relaxed font-medium">
                     {isTranslatingAPI ? (
                       <div className="flex flex-col items-center justify-center h-full text-blue-500 gap-4">
                         <Loader2 className="w-8 h-8 animate-spin" />
@@ -320,7 +320,7 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
               </div>
             )}
             {isModelReady && !transcript && (
-              <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
+              <div className="bg-gray-50/50  rounded-xl border border-dashed border-gray-200  h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 p-8 text-center">
                 <Languages className="w-12 h-12 mb-4 opacity-20" />
                 <p>Bản dịch sẽ hiển thị ở đây.</p>
               </div>
