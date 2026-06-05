@@ -4,16 +4,34 @@ env.allowLocalModels = false;
 
 class PipelineSingleton {
   static task = "automatic-speech-recognition";
-  static model = "Xenova/whisper-tiny.en";
+  static model = "Xenova/whisper-base.en";
   static instance = null;
 
   static async getInstance(progress_callback) {
     if (this.instance === null) {
       console.log("Calling pipeline() to load model...");
       try {
-        this.instance = pipeline(this.task, this.model, { progress_callback });
+        // Attempt to load with WebGPU for 10x-20x acceleration
+        this.instance = pipeline(this.task, this.model, { 
+          device: 'webgpu', 
+          dtype: {
+            encoder_model: 'fp32',
+            decoder_model_merged: 'q4' // Use quantization for decoder to save memory on GPU
+          },
+          progress_callback 
+        });
         await this.instance;
-        console.log("pipeline() loaded successfully");
+        console.log("pipeline() loaded successfully with WebGPU");
+      } catch (err) {
+        console.warn("WebGPU initialization failed or not supported. Falling back to CPU (WASM)...", err);
+        // Fallback to WASM
+        this.instance = pipeline(this.task, this.model, { 
+          device: 'wasm',
+          progress_callback 
+        });
+        await this.instance;
+        console.log("pipeline() loaded successfully with CPU (WASM)");
+      }
       } catch (err) {
         console.error("pipeline() failed:", err);
         throw err;
