@@ -164,10 +164,10 @@ export default function EngMaster() {
       />
 
       {/* Sidebar / Topnav */}
-      <nav className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-2 sm:px-4 md:px-8 py-2.5 md:py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-9 h-9 md:w-12 md:h-12 shrink-0 bg-indigo-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
-            <GraduationCap className="w-5 h-5 md:w-7 md:h-7" />
+      <nav className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-1.5 sm:px-4 md:px-8 py-2 md:py-4 flex items-center justify-between gap-1 shadow-sm">
+        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+          <div className="w-8 h-8 md:w-12 md:h-12 shrink-0 bg-indigo-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+            <GraduationCap className="w-4 h-4 md:w-7 md:h-7" />
           </div>
           <div className="hidden sm:block">
             <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800 leading-tight">
@@ -196,25 +196,25 @@ export default function EngMaster() {
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
-              className={`focus:outline-none flex items-center justify-center gap-1.5 md:gap-2 px-2.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[3.5rem] ${tab.id === "topics" ? "tour-tab-topics" : ""} ${tab.id === "quiz" ? "tour-tab-quiz" : ""} ${tab.id === "dashboard" ? "tour-tab-progress" : ""} ${
+              className={`focus:outline-none flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 px-1.5 sm:px-3 md:px-6 py-1.5 md:py-2.5 rounded-xl md:rounded-2xl text-[10px] sm:text-xs md:text-sm font-black transition-all duration-300 min-w-[2.5rem] sm:min-w-[3.5rem] ${tab.id === "topics" ? "tour-tab-topics" : ""} ${tab.id === "quiz" ? "tour-tab-quiz" : ""} ${tab.id === "dashboard" ? "tour-tab-progress" : ""} ${
                 activeTab === tab.id
                   ? "bg-white text-indigo-600 shadow-[0_4px_12px_rgba(79,70,229,0.12)] border border-slate-100 scale-105"
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
               }`}
             >
-              <tab.icon className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-              <span className={activeTab === tab.id ? "block" : "hidden sm:block"}>
+              <tab.icon className="w-4 h-4 md:w-[18px] md:h-[18px] shrink-0" />
+              <span className={`whitespace-nowrap ${activeTab === tab.id ? "block" : "hidden sm:block"}`}>
                 {tab.label}
               </span>
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           <OnlineUsersWidget />
           <button
             onClick={() => setIsSettingsModalOpen(true)}
-            className="p-2 md:p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-indigo-100"
+            className="p-1.5 md:p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-indigo-100"
             title="Cài đặt"
           >
             <Settings className="w-5 h-5 md:w-5.5 md:h-5.5" />

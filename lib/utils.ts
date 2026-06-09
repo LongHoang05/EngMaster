@@ -112,14 +112,14 @@ export const playFailSound = () => {
   }
 };
 
-export const playAudio = (text: string) => {
+export const playAudio = (text: string, lang: string = "en-US") => {
   const vol = getVoiceVolume();
   if (vol <= 0) return;
 
   if ("speechSynthesis" in window) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
+    utterance.lang = lang;
     utterance.rate = 0.85;
     utterance.volume = vol;
     window.speechSynthesis.speak(utterance);
@@ -130,6 +130,40 @@ export const normalizeText = (s: string) =>
   s
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9àáạảãâăèéẹẻẽêìíịỉĩòóọỏõôơùúụủũưỳýỵỷỹđ ]/g, "")
+    // Remove punctuation and special characters, keep letters, numbers and spaces
+    .replace(/[^a-z0-9àáạảãâăèéẹẻẽêìíịỉĩòóọỏõôơùúụủũưỳýỵỷỹđ\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
+export const levenshteinDistance = (a: string, b: string): number => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          Math.min(
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
+          )
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+};
