@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Settings,
   Headphones,
+  Tv,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
@@ -34,6 +35,7 @@ import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
 import ListeningScreen from "@/components/ListeningScreen";
 import OnlineUsersWidget from "@/components/OnlineUsersWidget";
+import MovieContainer from "@/components/MovieContainer";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -86,8 +88,24 @@ export default function EngMaster() {
     handleFlashcardAnswer,
   } = useVocabularies(selectedTopic, fetchTopics);
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening" | "movies">("dashboard");
   const [unsavedTabs, setUnsavedTabs] = useState<Record<string, boolean>>({});
+  const [hasLoadedTab, setHasLoadedTab] = useState(false);
+
+  // Persist activeTab across reloads
+  useEffect(() => {
+    const savedTab = localStorage.getItem("engmaster_active_tab");
+    if (savedTab && ["dashboard", "topics", "quiz", "listening", "movies"].includes(savedTab)) {
+      setActiveTab(savedTab as any);
+    }
+    setHasLoadedTab(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasLoadedTab) {
+      localStorage.setItem("engmaster_active_tab", activeTab);
+    }
+  }, [activeTab, hasLoadedTab]);
 
   const handleQuizUnsavedChange = useCallback((isUnsaved: boolean) => {
     setUnsavedTabs(prev => ({ ...prev, quiz: isUnsaved }));
@@ -181,6 +199,7 @@ export default function EngMaster() {
             { id: "dashboard", label: "Tiến độ", icon: LayoutDashboard },
             { id: "topics", label: "Tài liệu", icon: BookOpen },
             { id: "listening", label: "Luyện nghe", icon: Headphones },
+            { id: "movies", label: "Phim ảnh", icon: Tv },
             { id: "quiz", label: "Kiểm tra", icon: Gamepad2 },
           ].map((tab) => (
             <button
@@ -192,7 +211,7 @@ export default function EngMaster() {
                   if (!confirm) return;
                   setUnsavedTabs(prev => ({ ...prev, [activeTab]: false }));
                 }
-                setActiveTab(tab.id as "dashboard" | "topics" | "quiz" | "listening");
+                setActiveTab(tab.id as "dashboard" | "topics" | "quiz" | "listening" | "movies");
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
@@ -203,7 +222,7 @@ export default function EngMaster() {
               }`}
             >
               <tab.icon className="w-4 h-4 md:w-[18px] md:h-[18px] shrink-0" />
-              <span className={`whitespace-nowrap ${activeTab === tab.id ? "block" : "hidden sm:block"}`}>
+              <span className={`whitespace-nowrap ${activeTab === tab.id ? "block" : "hidden lg:block"}`}>
                 {tab.label}
               </span>
             </button>
@@ -331,6 +350,21 @@ export default function EngMaster() {
             >
               <ListeningScreen 
                 onUnsavedChange={handleListeningUnsavedChange}
+              />
+            </motion.div>
+          )}
+
+          {activeTab === "movies" && (
+            <motion.div
+              key="movies"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <MovieContainer 
+                userCode={userCode}
+                onUnsavedChange={(v) => setUnsavedTabs(prev => ({ ...prev, movies: v }))} 
               />
             </motion.div>
           )}
