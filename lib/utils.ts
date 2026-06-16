@@ -131,7 +131,7 @@ export const normalizeText = (s: string) =>
     .toLowerCase()
     .trim()
     // Remove punctuation and special characters, keep letters, numbers and spaces
-    .replace(/[^a-z0-9àáạảãâăèéẹẻẽêìíịỉĩòóọỏõôơùúụủũưỳýỵỷỹđ\s]/g, "")
+    .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 
