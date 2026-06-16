@@ -4,16 +4,17 @@ import React, { useState, useEffect, useRef } from "react";
 import AudioUploader from "@/components/AudioUploader";
 import LocalTranscriptViewer from "@/components/LocalTranscriptViewer";
 import CustomAudioPlayer from "@/components/CustomAudioPlayer";
-import { Loader2, BrainCircuit, Headphones, Languages } from "lucide-react";
+import { Loader2, BrainCircuit, Headphones, Languages, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ListeningScreenProps {
   onUnsavedChange?: (isUnsaved: boolean) => void;
   isMiniPlayer?: boolean;
   onReturnToListening?: () => void;
+  onMinimize?: () => void;
 }
 
-export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnToListening }: ListeningScreenProps = {}) {
+export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnToListening, onMinimize }: ListeningScreenProps = {}) {
   const [isModelReady, setIsModelReady] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [modelProgress, setModelProgress] = useState<{file: string, progress: number, loaded?: number, total?: number}[]>([]);
@@ -273,6 +274,16 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
                      </div>
                      <button onClick={onReturnToListening} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
                        Mở rộng
+                     </button>
+                   </div>
+                )}
+                {!isMiniPlayer && onMinimize && (
+                   <div className="flex justify-end mb-2">
+                     <button 
+                       onClick={onMinimize} 
+                       className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors"
+                     >
+                       <Minimize2 size={16} /> Thu nhỏ (Mini Player)
                      </button>
                    </div>
                 )}

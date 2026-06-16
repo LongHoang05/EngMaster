@@ -347,6 +347,7 @@ export default function EngMaster() {
           onUnsavedChange={handleListeningUnsavedChange}
           isMiniPlayer={activeTab !== "listening"}
           onReturnToListening={() => setActiveTab("listening")}
+          onMinimize={() => setActiveTab("topics")}
         />
       </main>
 
