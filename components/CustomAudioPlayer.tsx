@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Play, Pause, FastForward, Rewind, Settings } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Play, Pause, FastForward, Rewind, Settings, AppWindow, X } from "lucide-react";
 
 interface CustomAudioPlayerProps {
   audioUrl: string;
@@ -16,6 +17,59 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [pipWindow, setPipWindow] = useState<Window | null>(null);
+
+  const togglePiP = async () => {
+    if (pipWindow) {
+      pipWindow.close();
+      return;
+    }
+    
+    if (!('documentPictureInPicture' in window)) {
+      alert("Trình duyệt của bạn không hỗ trợ Picture-in-Picture cho giao diện này. Vui lòng dùng Chrome hoặc Edge phiên bản mới nhất.");
+      return;
+    }
+
+    try {
+      const pip = await (window as any).documentPictureInPicture.requestWindow({
+        width: 350,
+        height: 180,
+      });
+
+      // Copy Tailwind styles
+      Array.from(document.styleSheets).forEach((sheet) => {
+        try {
+          if (sheet.href) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = sheet.href;
+            pip.document.head.appendChild(link);
+          } else {
+            const cssRules = Array.from(sheet.cssRules).map(rule => rule.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pip.document.head.appendChild(style);
+          }
+        } catch (e) {
+          // ignore CORS errors
+        }
+      });
+      
+      // Copy explicit style tags
+      document.head.querySelectorAll('style').forEach((style) => {
+        pip.document.head.appendChild(style.cloneNode(true));
+      });
+
+      pip.addEventListener('pagehide', () => {
+        setPipWindow(null);
+      });
+      
+      setPipWindow(pip);
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi khi mở Picture-in-Picture.");
+    }
+  };
 
   useEffect(() => {
     if (seekToTime !== null && seekToTime !== undefined && audioRef.current) {
@@ -111,20 +165,12 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, duration]); // Cập nhật lại event khi isPlaying thay đổi
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 w-full">
+  const playerUI = (
+    <div className={`bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-sm p-4 w-full h-full flex flex-col justify-center ${pipWindow ? '' : 'rounded-xl border'}`}>
       <div className="text-xs text-gray-400 dark:text-gray-500 mb-2 flex justify-end gap-3">
         <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">Space</kbd> Play/Pause</span>
         <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">←</kbd> <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">→</kbd> Tua ±5s</span>
       </div>
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)}
-        className="hidden"
-      />
 
       <div className="flex flex-col gap-3">
         {/* Progress Bar */}
@@ -166,11 +212,19 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
             </button>
           </div>
 
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
             <button
-              onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              onClick={togglePiP}
+              className={`p-2 rounded-lg transition-colors ${pipWindow ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
+              title="Cửa sổ nổi (PiP)"
             >
+              <AppWindow className="w-5 h-5" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
               <Settings className="w-4 h-4" />
               {playbackRate}x
             </button>
@@ -191,9 +245,42 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+        className="hidden"
+      />
+      
+      {pipWindow ? (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex flex-col items-center text-center gap-3 w-full shadow-inner animate-pulse">
+          <AppWindow className="w-8 h-8 text-indigo-400" />
+          <p className="text-sm font-medium text-indigo-800">
+            Trình phát đang hiển thị ở <strong>Cửa sổ nổi (PiP)</strong>
+          </p>
+          <button 
+            onClick={() => pipWindow.close()}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white text-indigo-600 font-bold text-sm rounded-lg border border-indigo-200 shadow-sm hover:bg-indigo-50 transition-colors"
+          >
+            <X size={16} /> Thu hồi
+          </button>
+        </div>
+      ) : (
+        playerUI
+      )}
+
+      {pipWindow && createPortal(playerUI, pipWindow.document.body)}
+    </>
   );
 }

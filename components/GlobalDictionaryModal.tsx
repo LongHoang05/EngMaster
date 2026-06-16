@@ -21,6 +21,7 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
   const [selectedTopicId, setSelectedTopicId] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [existingTopicNames, setExistingTopicNames] = useState<string[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -47,6 +48,26 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
     setError(null);
     setDictData(null);
     setSaveSuccess(false);
+    setExistingTopicNames([]);
+
+    if (topics && topics.length > 0) {
+      try {
+        const topicIds = topics.map(t => t.id);
+        const { data: existingWords } = await supabase
+          .from('vocabularies')
+          .select('topic_id')
+          .ilike('word', word.trim())
+          .in('topic_id', topicIds);
+          
+        if (existingWords && existingWords.length > 0) {
+          const foundTopicIds = existingWords.map(w => w.topic_id);
+          const names = Array.from(new Set(topics.filter(t => foundTopicIds.includes(t.id)).map(t => t.name)));
+          setExistingTopicNames(names);
+        }
+      } catch (e) {
+        console.error("Failed to check existing words", e);
+      }
+    }
 
     try {
       // 1. Fetch Vietnamese Meaning via Google Translate
@@ -231,8 +252,22 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
                       </div>
                     </div>
                     
-                    {/* Quick Save Box */}
-                    {topics.length > 0 && (
+                    {/* Quick Save Box or Existing Label */}
+                    {existingTopicNames.length > 0 ? (
+                      <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl w-56 shrink-0 flex flex-col gap-2 shadow-sm">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1">
+                          <CheckCircle2 size={12} /> Đã có trong danh sách
+                        </label>
+                        <div className="text-sm font-medium text-emerald-800 bg-emerald-100/50 py-2 px-3 rounded-xl border border-emerald-100 max-h-24 overflow-y-auto custom-scrollbar">
+                          {existingTopicNames.map((name, i) => (
+                            <div key={i} className="flex items-center gap-1.5 mb-1.5 last:mb-0">
+                              <BookOpen size={12} className="opacity-70 shrink-0 text-emerald-600" />
+                              <span className="truncate leading-tight" title={name}>{name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : topics.length > 0 && (
                       <div className="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl w-56 shrink-0 flex flex-col gap-2 shadow-sm">
                         <label className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1">
                           <BookOpen size={12} /> Lưu vào chủ đề
