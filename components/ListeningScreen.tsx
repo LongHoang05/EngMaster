@@ -277,16 +277,6 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
                      </button>
                    </div>
                 )}
-                {!isMiniPlayer && onMinimize && (
-                   <div className="flex justify-end mb-2">
-                     <button 
-                       onClick={onMinimize} 
-                       className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors"
-                     >
-                       <Minimize2 size={16} /> Thu nhỏ (Mini Player)
-                     </button>
-                   </div>
-                )}
                 <CustomAudioPlayer 
                   audioUrl={audioUrl} 
                   seekToTime={seekToTime}

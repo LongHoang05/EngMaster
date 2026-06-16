@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Pause, FastForward, Rewind, Settings, AppWindow, X } from "lucide-react";
+import { Play, Pause, FastForward, Rewind, Settings, AppWindow, X, Minimize2 } from "lucide-react";
 
 interface CustomAudioPlayerProps {
   audioUrl: string;
@@ -213,13 +213,6 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
           </div>
 
           <div className="relative flex items-center gap-2">
-            <button
-              onClick={togglePiP}
-              className={`p-2 rounded-lg transition-colors ${pipWindow ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'}`}
-              title="Cửa sổ nổi (PiP)"
-            >
-              <AppWindow className="w-5 h-5" />
-            </button>
             <div className="relative">
               <button
                 onClick={() => setShowSpeedMenu(!showSpeedMenu)}
@@ -277,7 +270,17 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
           </button>
         </div>
       ) : (
-        playerUI
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex justify-end">
+            <button 
+              onClick={togglePiP} 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors shadow-sm"
+            >
+              <Minimize2 size={16} /> Thu nhỏ (Mini Player)
+            </button>
+          </div>
+          {playerUI}
+        </div>
       )}
 
       {pipWindow && createPortal(playerUI, pipWindow.document.body)}
