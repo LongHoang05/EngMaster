@@ -75,7 +75,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
                 }}
               />
               <Bar dataKey="count" fill="#10b981" radius={[6, 6, 0, 0]} barSize={32}>
-                <LabelList dataKey="count" position="top" fill="#64748b" fontSize={12} fontWeight={700} formatter={(value: number) => value > 0 ? value : ''} />
+                <LabelList dataKey="count" position="top" fill="#64748b" fontSize={12} fontWeight={700} formatter={(value: any) => Number(value) > 0 ? value : ''} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
