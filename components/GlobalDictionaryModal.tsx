@@ -23,6 +23,11 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [existingTopicNames, setExistingTopicNames] = useState<string[]>([]);
   
+  const topicsRef = useRef(topics);
+  useEffect(() => {
+    topicsRef.current = topics;
+  }, [topics]);
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
@@ -50,24 +55,27 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
     setSaveSuccess(false);
     setExistingTopicNames([]);
 
-    if (topics && topics.length > 0) {
-      try {
-        const topicIds = topics.map(t => t.id);
-        const { data: existingWords } = await supabase
-          .from('vocabularies')
-          .select('topic_id')
-          .ilike('word', word.trim())
-          .in('topic_id', topicIds);
-          
-        if (existingWords && existingWords.length > 0) {
-          const foundTopicIds = existingWords.map(w => w.topic_id);
-          const names = Array.from(new Set(topics.filter(t => foundTopicIds.includes(t.id)).map(t => t.name)));
-          setExistingTopicNames(names);
+    const checkExistingWord = async (wordToCheck: string) => {
+      const currentTopics = topicsRef.current;
+      if (currentTopics && currentTopics.length > 0) {
+        try {
+          const topicIds = currentTopics.map(t => t.id);
+          const { data: existingWords } = await supabase
+            .from('vocabularies')
+            .select('topic_id')
+            .ilike('word', wordToCheck.trim())
+            .in('topic_id', topicIds);
+            
+          if (existingWords && existingWords.length > 0) {
+            const foundTopicIds = existingWords.map(w => w.topic_id);
+            const names = Array.from(new Set(currentTopics.filter(t => foundTopicIds.includes(t.id)).map(t => t.name)));
+            setExistingTopicNames(names);
+          }
+        } catch (e) {
+          console.error("Failed to check existing words", e);
         }
-      } catch (e) {
-        console.error("Failed to check existing words", e);
       }
-    }
+    };
 
     try {
       // 1. Fetch Vietnamese Meaning via Google Translate
@@ -92,6 +100,7 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
           audio: null,
           meanings: []
         });
+        await checkExistingWord(word);
         setIsLoading(false);
         return;
       }
@@ -117,6 +126,7 @@ export default function GlobalDictionaryModal({ userCode, topics }: GlobalDictio
         audio: audioUrl,
         meanings: firstEntry.meanings || []
       });
+      await checkExistingWord(firstEntry.word);
 
     } catch (e: any) {
       setError("Đã xảy ra lỗi khi tải dữ liệu từ điển.");
