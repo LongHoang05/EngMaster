@@ -9,6 +9,8 @@ import {
   GraduationCap,
   Settings,
   Headphones,
+  Search,
+  Command,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
@@ -34,6 +36,7 @@ import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
 import ListeningScreen from "@/components/ListeningScreen";
 import OnlineUsersWidget from "@/components/OnlineUsersWidget";
+import GlobalDictionaryModal from "@/components/GlobalDictionaryModal";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -211,6 +214,23 @@ export default function EngMaster() {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+          <div 
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+            className="hidden lg:flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-transparent hover:border-slate-300 text-slate-400 rounded-xl cursor-pointer transition-colors"
+          >
+            <Search size={16} />
+            <span className="text-sm font-medium mr-4">Tìm kiếm hoặc Tra từ...</span>
+            <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white rounded text-[10px] font-bold text-slate-500 shadow-sm">
+              <Command size={10} /> K
+            </span>
+          </div>
+          <button 
+            className="lg:hidden p-1.5 md:p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-indigo-100"
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+          >
+            <Search className="w-5 h-5 md:w-5.5 md:h-5.5" />
+          </button>
+
           <OnlineUsersWidget />
           <button
             onClick={() => setIsSettingsModalOpen(true)}
@@ -321,20 +341,13 @@ export default function EngMaster() {
             </motion.div>
           )}
 
-          {activeTab === "listening" && (
-            <motion.div
-              key="listening"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ListeningScreen 
-                onUnsavedChange={handleListeningUnsavedChange}
-              />
-            </motion.div>
-          )}
         </AnimatePresence>
+
+        <ListeningScreen 
+          onUnsavedChange={handleListeningUnsavedChange}
+          isMiniPlayer={activeTab !== "listening"}
+          onReturnToListening={() => setActiveTab("listening")}
+        />
       </main>
 
       {/* Modals */}
@@ -428,6 +441,13 @@ export default function EngMaster() {
         <AIChatWidget 
           selectedTopic={selectedTopic} 
           vocabularies={vocabularies} 
+        />
+      )}
+
+      {userCode && (
+        <GlobalDictionaryModal
+          userCode={userCode}
+          topics={topics}
         />
       )}
     </div>

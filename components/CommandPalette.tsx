@@ -26,7 +26,7 @@ interface CommandItem {
   id: string | number;
   label: string;
   icon: React.ElementType;
-  type: "nav" | "topic";
+  type: "nav" | "topic" | "dictionary";
   data?: Topic;
 }
 
@@ -53,8 +53,13 @@ export default function CommandPalette({
       }
     };
 
+    const handleOpen = () => setIsOpen(true);
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("open-command-palette", handleOpen);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("open-command-palette", handleOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -93,6 +98,15 @@ export default function CommandPalette({
     })),
   ];
 
+  if (query.trim().length > 0) {
+    results.push({
+      id: "dict-search",
+      label: `Tra từ điển: "${query.trim()}"`,
+      icon: Search,
+      type: "dictionary" as const,
+    });
+  }
+
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
@@ -103,6 +117,8 @@ export default function CommandPalette({
     } else if (item.type === "topic" && item.data) {
       setActiveTab("topics");
       onSelectTopic(item.data);
+    } else if (item.type === "dictionary") {
+      window.dispatchEvent(new CustomEvent('open-dictionary', { detail: query.trim() }));
     }
     setIsOpen(false);
   };

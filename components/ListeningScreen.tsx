@@ -9,9 +9,11 @@ import { toast } from "sonner";
 
 interface ListeningScreenProps {
   onUnsavedChange?: (isUnsaved: boolean) => void;
+  isMiniPlayer?: boolean;
+  onReturnToListening?: () => void;
 }
 
-export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps = {}) {
+export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnToListening }: ListeningScreenProps = {}) {
   const [isModelReady, setIsModelReady] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [modelProgress, setModelProgress] = useState<{file: string, progress: number, loaded?: number, total?: number}[]>([]);
@@ -175,10 +177,10 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50  py-12 px-4 sm:px-6 lg:px-8">
+    <div className={isMiniPlayer ? "fixed inset-0 pointer-events-none z-[100]" : "min-h-screen bg-gray-50  py-12 px-4 sm:px-6 lg:px-8"}>
       <div className="max-w-7xl mx-auto space-y-8">
         
-        <div className="text-center space-y-4 mb-10">
+        <div className={`text-center space-y-4 mb-10 ${isMiniPlayer ? 'hidden' : ''}`}>
           <div className="flex justify-center mb-4">
             <div className="p-4 bg-blue-100  rounded-full">
               <Headphones className="w-10 h-10 text-blue-600 " />
@@ -196,8 +198,9 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* CỘT TRÁI: Uploader & Audio Player */}
-          <div className="lg:col-span-4 space-y-6">
-            {!isModelReady && (
+          <div className={`lg:col-span-4 space-y-6 ${isMiniPlayer && !audioUrl ? 'hidden' : ''}`}>
+            <div className={isMiniPlayer ? 'hidden' : ''}>
+              {!isModelReady && (
               <div className="bg-white  rounded-xl shadow-sm border border-gray-100  p-8 flex flex-col items-center text-center w-full">
                 <BrainCircuit className="w-12 h-12 text-indigo-500 mb-4" />
                 <h2 className="text-xl font-bold text-gray-800  mb-2">
@@ -243,9 +246,10 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
                 )}
               </div>
             )}
+            </div>
 
             {isModelReady && (
-              <div className="space-y-6 fade-in">
+              <div className={`space-y-6 fade-in ${isMiniPlayer ? 'hidden' : ''}`}>
                 <AudioUploader 
                   onTranscribe={handleTranscribe} 
                   disabled={!isModelReady || isTranscribing}
@@ -256,22 +260,33 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
                   audioUrl={audioUrl}
                   setAudioUrl={setAudioUrl}
                 />
-                
-                {audioUrl && (
-                  <div className="mt-4">
-                    <CustomAudioPlayer 
-                      audioUrl={audioUrl} 
-                      seekToTime={seekToTime}
-                      onTimeUpdate={setCurrentTime}
-                    />
-                  </div>
+              </div>
+            )}
+            
+            {audioUrl && (
+              <div className={isMiniPlayer ? "pointer-events-auto fixed bottom-6 right-6 w-[350px] bg-white shadow-2xl rounded-2xl border border-slate-200 p-4 animate-fade-in-up z-[200]" : "mt-4"}>
+                {isMiniPlayer && (
+                   <div className="flex justify-between items-center mb-3">
+                     <div className="flex items-center gap-2">
+                       <Headphones className="w-4 h-4 text-indigo-500 animate-pulse" />
+                       <span className="text-sm font-bold text-slate-700">Đang phát audio...</span>
+                     </div>
+                     <button onClick={onReturnToListening} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
+                       Mở rộng
+                     </button>
+                   </div>
                 )}
+                <CustomAudioPlayer 
+                  audioUrl={audioUrl} 
+                  seekToTime={seekToTime}
+                  onTimeUpdate={setCurrentTime}
+                />
               </div>
             )}
           </div>
 
           {/* CỘT GIỮA: Transcript */}
-          <div className="lg:col-span-4">
+          <div className={`lg:col-span-4 ${isMiniPlayer ? 'hidden' : ''}`}>
             {isModelReady && transcript && (
               <div className="h-full fade-in">
                 <LocalTranscriptViewer 
@@ -292,7 +307,7 @@ export default function ListeningPage({ onUnsavedChange }: ListeningScreenProps 
           </div>
 
           {/* CỘT PHẢI: Translation */}
-          <div className="lg:col-span-4">
+          <div className={`lg:col-span-4 ${isMiniPlayer ? 'hidden' : ''}`}>
             {isModelReady && transcript && (
               <div className="h-full fade-in">
                 <div className="bg-white  rounded-xl shadow-lg border border-gray-100  p-6 flex flex-col gap-4 w-full h-full max-h-[800px]">
