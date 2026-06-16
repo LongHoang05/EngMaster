@@ -14,6 +14,7 @@ import {
   Cell,
   Legend,
   Label,
+  LabelList,
 } from "recharts";
 
 interface DashboardChartsProps {
@@ -47,10 +48,10 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       {/* Activity Chart */}
       <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
         <div className="flex items-center gap-2 mb-6">
-          <div className="text-indigo-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <div className="text-emerald-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
-          <h3 className="font-bold text-slate-800">Từ vựng mới (7 ngày qua)</h3>
+          <h3 className="font-bold text-slate-800">Lịch ôn tập (7 ngày tới)</h3>
         </div>
         <div className="h-[250px] w-full min-h-[250px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -73,7 +74,9 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
                   fontWeight: "700",
                 }}
               />
-              <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={32} />
+              <Bar dataKey="count" fill="#10b981" radius={[6, 6, 0, 0]} barSize={32}>
+                <LabelList dataKey="count" position="top" fill="#64748b" fontSize={12} fontWeight={700} formatter={(value: number) => value > 0 ? value : ''} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

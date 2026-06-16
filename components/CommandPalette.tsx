@@ -118,7 +118,9 @@ export default function CommandPalette({
       setActiveTab("topics");
       onSelectTopic(item.data);
     } else if (item.type === "dictionary") {
-      window.dispatchEvent(new CustomEvent('open-dictionary', { detail: query.trim() }));
+      window.dispatchEvent(
+        new CustomEvent("open-dictionary", { detail: query.trim() }),
+      );
     }
     setIsOpen(false);
   };
@@ -141,12 +143,6 @@ export default function CommandPalette({
 
   return (
     <>
-      {/* Floating Shortcut Hint (Optional, hidden on mobile) */}
-      <div className="fixed bottom-6 right-6 z-[40] hidden md:flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md border border-slate-200 rounded-full shadow-lg text-slate-400 text-xs font-bold pointer-events-none">
-        <Command size={14} />
-        <span>+ K để tìm nhanh</span>
-      </div>
-
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">

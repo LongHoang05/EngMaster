@@ -214,7 +214,7 @@ export default function DashboardScreen({
 
         const { data, error } = await supabase
           .from("vocabularies")
-          .select("review_interval, created_at")
+          .select("review_interval, created_at, next_review_date")
           .in("topic_id", topicIds);
 
         if (error) throw error;
@@ -223,14 +223,17 @@ export default function DashboardScreen({
         let l1 = 0, l2 = 0, l3 = 0, l4 = 0;
         const addedByDate: Record<string, number> = {};
         
-        // Last 7 days for chart
-        const last7Days = [...Array(7)].map((_, i) => {
+        // Next 7 days for review schedule
+        const next7DaysStr = [...Array(7)].map((_, i) => {
           const d = new Date();
-          d.setDate(d.getDate() - i);
+          d.setDate(d.getDate() + i);
           return d.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
-        }).reverse();
+        });
+        
+        const reviewCounts: Record<string, number> = {};
+        next7DaysStr.forEach(day => reviewCounts[day] = 0);
 
-        last7Days.forEach(day => addedByDate[day] = 0);
+        const todayStr = next7DaysStr[0];
 
         data?.forEach((v) => {
           // Mastery levels
@@ -240,19 +243,33 @@ export default function DashboardScreen({
           else if (iv < 30) l3++;
           else l4++;
 
-          // Activity by date (using VN Timezone)
-          if (v.created_at) {
-            const vnDate = new Date(v.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
-            if (addedByDate[vnDate] !== undefined) {
-              addedByDate[vnDate]++;
+          // Review Schedule (Next 7 days)
+          if (v.next_review_date) {
+            const reviewDateStr = new Date(v.next_review_date).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+            
+            // If the review date is in the past or today, count it as today
+            if (reviewDateStr <= todayStr) {
+              reviewCounts[todayStr]++;
+            } else if (reviewCounts[reviewDateStr] !== undefined) {
+              // If it's exactly within the next 7 days
+              reviewCounts[reviewDateStr]++;
             }
+          } else {
+            // New word (no next_review_date), needs review today
+            reviewCounts[todayStr]++;
           }
         });
 
-        const chartData = last7Days.map(day => ({
-          name: new Date(day).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric' }),
-          count: addedByDate[day]
-        }));
+        const chartData = next7DaysStr.map((day, i) => {
+          let label = new Date(day).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric' });
+          if (i === 0) label = "Hôm nay";
+          else if (i === 1) label = "Ngày mai";
+          
+          return {
+            name: label,
+            count: reviewCounts[day]
+          };
+        });
 
         setStats({
           level1: l1,
