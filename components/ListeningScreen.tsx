@@ -265,22 +265,14 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
             )}
             
             {audioUrl && (
-              <div className={isMiniPlayer ? "pointer-events-auto fixed bottom-6 right-6 w-[350px] bg-white shadow-2xl rounded-2xl border border-slate-200 p-4 animate-fade-in-up z-[200]" : "mt-4"}>
-                {isMiniPlayer && (
-                   <div className="flex justify-between items-center mb-3">
-                     <div className="flex items-center gap-2">
-                       <Headphones className="w-4 h-4 text-indigo-500 animate-pulse" />
-                       <span className="text-sm font-bold text-slate-700">Đang phát audio...</span>
-                     </div>
-                     <button onClick={onReturnToListening} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
-                       Mở rộng
-                     </button>
-                   </div>
-                )}
+              <div className={isMiniPlayer ? "pointer-events-auto fixed bottom-6 right-6 w-[350px] animate-fade-in-up z-[200]" : "mt-4"}>
                 <CustomAudioPlayer 
                   audioUrl={audioUrl} 
                   seekToTime={seekToTime}
                   onTimeUpdate={setCurrentTime}
+                  isMini={isMiniPlayer}
+                  onExpand={onReturnToListening}
+                  title={file?.name || "Audio Track"}
                 />
               </div>
             )}

@@ -2,15 +2,18 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Pause, FastForward, Rewind, Settings, AppWindow, X, Minimize2 } from "lucide-react";
+import { Play, Pause, FastForward, Rewind, Settings, AppWindow, X, Minimize2, Headphones } from "lucide-react";
 
 interface CustomAudioPlayerProps {
   audioUrl: string;
   seekToTime?: number | null;
   onTimeUpdate?: (time: number) => void;
+  isMini?: boolean;
+  onExpand?: () => void;
+  title?: string;
 }
 
-export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }: CustomAudioPlayerProps) {
+export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate, isMini, onExpand, title }: CustomAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -245,6 +248,145 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
     </div>
   );
 
+  const premiumMiniPlayerUI = (
+    <div className={`w-full h-full flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60 dark:border-slate-700/60 ${pipWindow ? '' : 'rounded-3xl overflow-hidden'}`}>
+      <style>{`
+        @keyframes audio-bounce {
+          0%, 100% { transform: scaleY(0.4); }
+          50% { transform: scaleY(1); }
+        }
+      `}</style>
+      <div className="flex flex-col flex-1 p-5">
+        {/* Header / Info */}
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div className="flex gap-4 items-center min-w-0">
+             {/* Thumbnail / Visualizer */}
+             <div className="relative w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+               {isPlaying ? (
+                 <div className="flex items-end justify-center gap-1 h-5">
+                   <span className="w-1.5 bg-white rounded-full animate-[audio-bounce_0.8s_infinite_ease-in-out_0.1s]" style={{ height: '100%' }}></span>
+                   <span className="w-1.5 bg-white rounded-full animate-[audio-bounce_0.8s_infinite_ease-in-out_0.3s]" style={{ height: '100%' }}></span>
+                   <span className="w-1.5 bg-white rounded-full animate-[audio-bounce_0.8s_infinite_ease-in-out_0.2s]" style={{ height: '100%' }}></span>
+                 </div>
+               ) : (
+                 <Headphones className="w-7 h-7 text-white" />
+               )}
+             </div>
+             
+             {/* Title & Time */}
+             <div className="flex flex-col min-w-0">
+               <p className="text-base font-extrabold text-slate-800 dark:text-white truncate">
+                 {title || "Audio Track"}
+               </p>
+               <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1">
+                 <span className="text-indigo-600 dark:text-indigo-400">{formatTime(currentTime)}</span> 
+                 <span className="mx-1.5">/</span> 
+                 {formatTime(duration)}
+               </p>
+             </div>
+          </div>
+          
+          {/* Actions top-right */}
+          <div className="flex items-center gap-1 shrink-0">
+            {onExpand && !pipWindow && (
+              <button
+                onClick={onExpand}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                title="Mở rộng"
+              >
+                <AppWindow className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Playback Controls & Progress */}
+        <div className="mt-auto space-y-5">
+          {/* Scrubber */}
+          <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full group">
+            <div 
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full pointer-events-none"
+              style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+            />
+            {/* Custom thumb */}
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-[3px] border-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md pointer-events-none"
+              style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 8px)` }}
+            />
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              value={currentTime}
+              onChange={handleSeek}
+              className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center justify-between">
+            {/* Speed Control */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                {playbackRate}x
+              </button>
+              
+              {showSpeedMenu && (
+                <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-xl rounded-xl overflow-hidden py-1 z-10 w-16">
+                  {speeds.map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => {
+                        setPlaybackRate(speed);
+                        setShowSpeedMenu(false);
+                      }}
+                      className={`w-full text-center px-2 py-2 text-xs font-bold transition-colors ${playbackRate === speed ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => skipTime(-5)}
+                className="text-slate-400 hover:text-indigo-500 transition-colors"
+                title="Lùi 5 giây"
+              >
+                <Rewind className="w-5 h-5" fill="currentColor" />
+              </button>
+              <button
+                onClick={togglePlay}
+                className="w-14 h-14 flex items-center justify-center bg-gradient-to-tr from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full transition-transform active:scale-95 shadow-xl shadow-indigo-500/30"
+              >
+                {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+              </button>
+              <button
+                onClick={() => skipTime(5)}
+                className="text-slate-400 hover:text-indigo-500 transition-colors"
+                title="Tới 5 giây"
+              >
+                <FastForward className="w-5 h-5" fill="currentColor" />
+              </button>
+            </div>
+            
+            {/* Empty div for flex alignment balance */}
+            <div className="w-[42px]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const activeUI = (isMini || pipWindow) ? premiumMiniPlayerUI : playerUI;
+
+
+
   return (
     <>
       <audio
@@ -271,19 +413,21 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate }
         </div>
       ) : (
         <div className="flex flex-col gap-2 w-full">
-          <div className="flex justify-end">
-            <button 
-              onClick={togglePiP} 
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors shadow-sm"
-            >
-              <Minimize2 size={16} /> Thu nhỏ (Mini Player)
-            </button>
-          </div>
-          {playerUI}
+          {!isMini && (
+            <div className="flex justify-end">
+              <button 
+                onClick={togglePiP} 
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors shadow-sm"
+              >
+                <Minimize2 size={16} /> Thu nhỏ (Mini Player)
+              </button>
+            </div>
+          )}
+          {activeUI}
         </div>
       )}
 
-      {pipWindow && createPortal(playerUI, pipWindow.document.body)}
+      {pipWindow && createPortal(activeUI, pipWindow.document.body)}
     </>
   );
 }
