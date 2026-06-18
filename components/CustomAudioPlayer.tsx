@@ -66,6 +66,25 @@ export default function CustomAudioPlayer({ audioUrl, seekToTime, onTimeUpdate, 
       pip.addEventListener('pagehide', () => {
         setPipWindow(null);
       });
+
+      // Ngăn resize bằng cách ép lại kích thước gốc khi có sự kiện resize
+      let resizeTimeout: NodeJS.Timeout;
+      pip.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          if (pip.innerWidth !== 350 || pip.innerHeight !== 180) {
+            pip.resizeTo(350, 180);
+          }
+        }, 50);
+      });
+
+      // Đồng bộ màu nền để tránh viền trắng nếu lag khi resize
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) pip.document.documentElement.classList.add('dark');
+      pip.document.body.style.margin = '0';
+      pip.document.body.style.height = '100vh';
+      pip.document.body.style.overflow = 'hidden';
+      pip.document.body.style.backgroundColor = isDark ? '#111827' : '#ffffff';
       
       setPipWindow(pip);
     } catch (e) {
