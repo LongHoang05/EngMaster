@@ -221,7 +221,6 @@ export default function QuizContainer({
     if (quizState === "playing" && questions[currentIndex]) {
       const currentQ = questions[currentIndex];
       if (
-        quizType === "multiple_choice" || 
         quizType === "typing_en_to_vi" || 
         quizType.startsWith("listening")
       ) {
@@ -390,19 +389,24 @@ export default function QuizContainer({
         promptSub = "";
         correctAnswerText = wordObj.word;
       } else if (quizType === "multiple_choice") {
+        // Câu hỏi tiếng Việt, đáp án tiếng Anh
+        promptText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
+        promptSub = "";
+        correctAnswerText = wordObj.word;
+        
         const filteredWords = words.filter((w) => w.id !== wordObj.id);
         const wrongAnswers = shuffleArray(filteredWords)
           .slice(0, 3)
-          .map((w) => (Array.isArray(w.meanings) ? w.meanings[0] : w.meanings));
+          .map((w) => w.word);
           
         // Thêm đáp án giả nếu không đủ từ vựng
         while (wrongAnswers.length < 3) {
-          wrongAnswers.push(`Đáp án giả ${wrongAnswers.length + 1}`);
+          wrongAnswers.push(`Option ${wrongAnswers.length + 1}`);
         }
         
         options = shuffleArray([
           ...wrongAnswers,
-          Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings,
+          wordObj.word,
         ]);
       } else if (quizType === "listening_en_to_vi") {
         promptSub = "";
@@ -942,7 +946,7 @@ export default function QuizContainer({
               <h3 className="text-4xl md:text-5xl font-black text-slate-800 mb-4 tracking-tight">
                 {currentQ.promptText}
               </h3>
-              {quizType !== "typing_vi_to_en" && (
+              {quizType !== "typing_vi_to_en" && quizType !== "multiple_choice" && (
                 <button
                   onClick={() => playAudio(currentQ.wordObject.word)}
                   className="p-3 text-indigo-500 hover:bg-indigo-50 rounded-full transition-all mb-4"
