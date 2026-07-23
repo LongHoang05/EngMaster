@@ -8,7 +8,6 @@ import {
   LogOut,
   GraduationCap,
   Settings,
-  Headphones,
   Search,
   Command,
 } from "lucide-react";
@@ -34,7 +33,6 @@ import StreakCelebration from "@/components/StreakCelebration";
 import AppTour from "@/components/AppTour";
 import CommandPalette from "@/components/CommandPalette";
 import SettingsModal from "@/components/SettingsModal";
-import ListeningScreen from "@/components/ListeningScreen";
 import OnlineUsersWidget from "@/components/OnlineUsersWidget";
 import GlobalDictionaryModal from "@/components/GlobalDictionaryModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -89,15 +87,11 @@ export default function EngMaster() {
     handleFlashcardAnswer,
   } = useVocabularies(selectedTopic, fetchTopics);
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz" | "listening">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "topics" | "quiz">("dashboard");
   const [unsavedTabs, setUnsavedTabs] = useState<Record<string, boolean>>({});
 
   const handleQuizUnsavedChange = useCallback((isUnsaved: boolean) => {
     setUnsavedTabs(prev => ({ ...prev, quiz: isUnsaved }));
-  }, []);
-
-  const handleListeningUnsavedChange = useCallback((isUnsaved: boolean) => {
-    setUnsavedTabs(prev => ({ ...prev, listening: isUnsaved }));
   }, []);
 
   // UI State for Modals
@@ -163,7 +157,6 @@ export default function EngMaster() {
           {[
             { id: "dashboard", label: "Tiến độ", icon: LayoutDashboard },
             { id: "topics", label: "Tài liệu", icon: BookOpen },
-            { id: "listening", label: "Luyện nghe", icon: Headphones },
             { id: "quiz", label: "Kiểm tra", icon: Gamepad2 },
           ].map((tab) => (
             <button
@@ -175,7 +168,7 @@ export default function EngMaster() {
                   if (!confirm) return;
                   setUnsavedTabs(prev => ({ ...prev, [activeTab]: false }));
                 }
-                setActiveTab(tab.id as "dashboard" | "topics" | "quiz" | "listening");
+                setActiveTab(tab.id as "dashboard" | "topics" | "quiz");
                 setSelectedTopic(null);
                 setViewMode("list");
               }}
@@ -321,14 +314,6 @@ export default function EngMaster() {
           )}
 
         </AnimatePresence>
-
-        <ListeningScreen
-          userCode={userCode}
-          onUnsavedChange={handleListeningUnsavedChange}
-          isMiniPlayer={activeTab !== "listening"}
-          onReturnToListening={() => setActiveTab("listening")}
-          onMinimize={() => setActiveTab("topics")}
-        />
       </main>
 
       {/* Modals */}
