@@ -17,7 +17,7 @@ export function useVocabularies(selectedTopic: Topic | null, onTopicChanged?: ()
         .from("vocabularies")
         .select("*")
         .eq("topic_id", topicId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setVocabularies(data || []);

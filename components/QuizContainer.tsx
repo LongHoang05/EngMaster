@@ -394,10 +394,19 @@ export default function QuizContainer({
         promptSub = "";
         correctAnswerText = wordObj.word;
         
-        const filteredWords = words.filter((w) => w.id !== wordObj.id);
-        const wrongAnswers = shuffleArray(filteredWords)
-          .slice(0, 3)
-          .map((w) => w.word);
+        const wrongAnswers: string[] = [];
+        if (words.length <= 4) {
+          wrongAnswers.push(...words.filter((w) => w.id !== wordObj.id).map((w) => w.word));
+        } else {
+          const pickedIndices = new Set<number>();
+          while (pickedIndices.size < 3) {
+            const rIdx = Math.floor(Math.random() * words.length);
+            if (words[rIdx].id !== wordObj.id) {
+              pickedIndices.add(rIdx);
+            }
+          }
+          pickedIndices.forEach((idx) => wrongAnswers.push(words[idx].word));
+        }
           
         // Thêm đáp án giả nếu không đủ từ vựng
         while (wrongAnswers.length < 3) {

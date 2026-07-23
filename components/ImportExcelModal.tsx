@@ -71,9 +71,28 @@ export default function ImportExcelModal({
   const [progress, setProgress] = useState({ current: 0, total: 0, currentSheet: "" });
   
   // Results
-  const [results, setResults] = useState({ success: 0, errors: 0 });
+  const [results, setResults] = useState({ success: 0, errors: 0, skipped: 0 });
   const [categoryNameInput, setCategoryNameInput] = useState(categoryName || "");
   const [topicNameInput, setTopicNameInput] = useState("");
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen && userCode) {
+      const fetchCategories = async () => {
+        const { data, error } = await supabase
+          .from("topics")
+          .select("category_name")
+          .or(`user_code.eq.${userCode},user_code.is.null`)
+          .not("category_name", "is", null);
+
+        if (!error && data) {
+          const uniqueCats = Array.from(new Set(data.map(d => d.category_name).filter(Boolean)));
+          setExistingCategories(uniqueCats as string[]);
+        }
+      };
+      fetchCategories();
+    }
+  }, [isOpen, userCode]);
 
   useEffect(() => {
     if (isOpen && file) {
@@ -84,7 +103,7 @@ export default function ImportExcelModal({
       setSheets([]);
       setMapping({ word: "", ipa: "", meanings: "", notes: "" });
       setProgress({ current: 0, total: 0, currentSheet: "" });
-      setResults({ success: 0, errors: 0 });
+      setResults({ success: 0, errors: 0, skipped: 0 });
     }
   }, [isOpen, file]);
 
@@ -168,10 +187,10 @@ export default function ImportExcelModal({
     };
 
     setMapping({
-      word: guessColumn(["từ vựng", "word", "từ", "vocabulary"]),
-      ipa: guessColumn(["phiên âm", "ipa", "phát âm", "pronunciation"]),
-      meanings: guessColumn(["nghĩa", "meanings", "meaning", "translation"]),
-      notes: guessColumn(["ghi chú", "notes", "note"]),
+      word: guessColumn(["từ vựng", "word", "từ", "vocabulary", "english", "tiếng anh", "vocab"]),
+      ipa: guessColumn(["phiên âm", "ipa", "phát âm", "pronunciation", "pronounce"]),
+      meanings: guessColumn(["nghĩa", "meanings", "meaning", "translation", "tiếng việt", "việt", "vietnamese"]),
+      notes: guessColumn(["ghi chú", "notes", "note", "chú thích"]),
     });
 
     setStep("mapping");
@@ -192,6 +211,7 @@ export default function ImportExcelModal({
 
     let successCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
 
     try {
       for (const sheet of selectedSheets) {
@@ -210,10 +230,10 @@ export default function ImportExcelModal({
           return idx;
         };
 
-        const wordIdx = getIdx(mapping.word, ["từ vựng", "word", "từ", "vocabulary"]);
-        const ipaIdx = getIdx(mapping.ipa, ["phiên âm", "ipa", "phát âm", "pronunciation"]);
-        const meaningsIdx = getIdx(mapping.meanings, ["nghĩa", "meanings", "meaning", "translation"]);
-        const notesIdx = getIdx(mapping.notes, ["ghi chú", "notes", "note"]);
+        const wordIdx = getIdx(mapping.word, ["từ vựng", "word", "từ", "vocabulary", "english", "tiếng anh", "vocab"]);
+        const ipaIdx = getIdx(mapping.ipa, ["phiên âm", "ipa", "phát âm", "pronunciation", "pronounce"]);
+        const meaningsIdx = getIdx(mapping.meanings, ["nghĩa", "meanings", "meaning", "translation", "tiếng việt", "việt", "vietnamese"]);
+        const notesIdx = getIdx(mapping.notes, ["ghi chú", "notes", "note", "chú thích"]);
 
         if (wordIdx === -1 || meaningsIdx === -1) {
           toast.warning(`Bỏ qua Sheet "${sheet.name}" vì không tìm thấy cột ánh xạ.`);
@@ -262,6 +282,18 @@ export default function ImportExcelModal({
 
         if (!topicId) continue;
 
+        // FETCH EXISTING VOCABULARIES FOR THIS TOPIC TO PREVENT DUPLICATES
+        const { data: existingVocabs, error: fetchVocabErr } = await supabase
+          .from("vocabularies")
+          .select("word")
+          .eq("topic_id", topicId);
+
+        if (fetchVocabErr) {
+          console.error("Lỗi fetch vocabularies:", fetchVocabErr);
+        }
+
+        const existingWordsSet = new Set((existingVocabs || []).map(v => v.word.trim().toLowerCase()));
+
         // CHUNKING: Import 500 rows at a time
         const CHUNK_SIZE = 500;
         const validRows = [];
@@ -272,6 +304,14 @@ export default function ImportExcelModal({
 
           const word = row[wordIdx] ? String(row[wordIdx]).trim() : "";
           if (!word) continue;
+
+          // DEDUPLICATION: Skip if word already exists in the topic or was already processed in this file
+          const lowerWord = word.toLowerCase();
+          if (existingWordsSet.has(lowerWord)) {
+            skippedCount++;
+            continue;
+          }
+          existingWordsSet.add(lowerWord);
 
           const rawMeanings = row[meaningsIdx] ? String(row[meaningsIdx]) : "";
           
@@ -323,7 +363,7 @@ export default function ImportExcelModal({
         }
       }
 
-      setResults({ success: successCount, errors: errorCount });
+      setResults({ success: successCount, errors: errorCount, skipped: skippedCount });
       setStep("result");
       onSuccess();
 
@@ -441,11 +481,17 @@ export default function ImportExcelModal({
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Từ vựng IELTS, Oxford 3000..."
+                    list="category-options"
+                    placeholder="VD: Từ vựng IELTS, Oxford 3000... (Chọn hoặc gõ mới)"
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 transition-all placeholder:font-medium placeholder:text-slate-300"
                     value={categoryNameInput}
                     onChange={(e) => setCategoryNameInput(e.target.value)}
                   />
+                  <datalist id="category-options">
+                    {existingCategories.map((cat, idx) => (
+                      <option key={idx} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
             </div>
@@ -533,9 +579,14 @@ export default function ImportExcelModal({
                 <p className="text-sm text-slate-500 font-medium">
                   Đã thêm <span className="font-black text-emerald-600">{results.success}</span> từ vựng mới vào dữ liệu.
                 </p>
+                {results.skipped > 0 && (
+                  <p className="text-amber-500 font-medium text-xs mt-2">
+                    Đã bỏ qua <span className="font-bold">{results.skipped}</span> từ vựng vì đã tồn tại trong chủ đề này.
+                  </p>
+                )}
                 {results.errors > 0 && (
                   <p className="text-rose-500 font-medium text-xs mt-2">
-                    Có {results.errors} dòng dữ liệu không hợp lệ đã bị bỏ qua.
+                    Có {results.errors} dòng dữ liệu bị lỗi trong quá trình nạp.
                   </p>
                 )}
               </div>

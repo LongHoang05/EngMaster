@@ -55,6 +55,11 @@ export default function VocabularyListView({
 }: VocabularyListViewProps) {
   const [filterType, setFilterType] = React.useState<string>("all");
   const [filterDifficulty, setFilterDifficulty] = React.useState<string>("all");
+  const [visibleCount, setVisibleCount] = React.useState(50);
+
+  React.useEffect(() => {
+    setVisibleCount(50);
+  }, [searchTerm, filterType, filterDifficulty, topic.id]);
 
   const filteredVocab = vocabularies.filter((v) => {
     const matchesSearch = v.word.toLowerCase().includes(searchTerm.toLowerCase());
@@ -62,6 +67,8 @@ export default function VocabularyListView({
     const matchesDifficulty = filterDifficulty === "all" || v.difficulty === filterDifficulty;
     return matchesSearch && matchesType && matchesDifficulty;
   });
+
+  const visibleVocab = filteredVocab.slice(0, visibleCount);
 
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-fade-in mb-10">
@@ -188,7 +195,7 @@ export default function VocabularyListView({
                 </td>
               </tr>
             ) : (
-              filteredVocab.map((v) => (
+              visibleVocab.map((v) => (
                 <tr key={v.id} className="group hover:bg-indigo-50/30 transition-colors">
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
@@ -283,6 +290,17 @@ export default function VocabularyListView({
           </tbody>
         </table>
       </div>
+      
+      {visibleCount < filteredVocab.length && (
+        <div className="p-6 text-center border-t border-slate-100 bg-slate-50/50">
+          <button
+            onClick={() => setVisibleCount(prev => prev + 50)}
+            className="px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl border border-indigo-100 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm"
+          >
+            Hiển thị thêm ({filteredVocab.length - visibleCount} từ nữa)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

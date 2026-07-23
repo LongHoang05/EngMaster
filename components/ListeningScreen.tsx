@@ -8,13 +8,14 @@ import { Loader2, BrainCircuit, Headphones, Languages, Minimize2 } from "lucide-
 import { toast } from "sonner";
 
 interface ListeningScreenProps {
+  userCode?: string | null;
   onUnsavedChange?: (isUnsaved: boolean) => void;
   isMiniPlayer?: boolean;
   onReturnToListening?: () => void;
   onMinimize?: () => void;
 }
 
-export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnToListening, onMinimize }: ListeningScreenProps = {}) {
+export default function ListeningPage({ userCode, onUnsavedChange, isMiniPlayer, onReturnToListening, onMinimize }: ListeningScreenProps = {}) {
   const [isModelReady, setIsModelReady] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [modelProgress, setModelProgress] = useState<{file: string, progress: number, loaded?: number, total?: number}[]>([]);
@@ -23,6 +24,10 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
   const [transcript, setTranscript] = useState<{text: string} | null>(null);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslatingAPI, setIsTranslatingAPI] = useState(false);
+
+  const [exerciseFormat, setExerciseFormat] = useState("");
+  const [solvedExercise, setSolvedExercise] = useState("");
+  const [isSolving, setIsSolving] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -174,6 +179,50 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
       alert("Đã xảy ra lỗi khi gọi API dịch.");
     } finally {
       setIsTranslatingAPI(false);
+    }
+  };
+
+  const handleSolveExercise = async () => {
+    if (!transcript?.text) {
+      toast.error("Vui lòng bóc băng âm thanh trước khi giải bài.");
+      return;
+    }
+    if (!exerciseFormat.trim()) {
+      toast.error("Vui lòng nhập định dạng bài tập.");
+      return;
+    }
+    
+    setIsSolving(true);
+    setSolvedExercise("");
+    
+    try {
+      const response = await fetch('/api/ai/solve-exercise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: transcript.text, exerciseFormat })
+      });
+      
+      const rawText = await response.text();
+      let data: any = {};
+      try {
+        if (rawText) data = JSON.parse(rawText);
+      } catch(e) {
+        data = { rawText };
+      }
+
+      if (response.ok) {
+        setSolvedExercise(data.solvedExercise);
+        toast.success("Giải bài thành công!");
+      } else {
+        const errorMsg = data.details || data.error || data.rawText || `HTTP ${response.status} ${response.statusText}`;
+        toast.error("Lỗi giải bài: " + errorMsg);
+        console.error("API Error Details:", { status: response.status, rawText, data });
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      toast.error("Đã xảy ra lỗi mạng khi gọi API giải bài.");
+    } finally {
+      setIsSolving(false);
     }
   };
 
@@ -336,6 +385,194 @@ export default function ListeningPage({ onUnsavedChange, isMiniPlayer, onReturnT
           </div>
 
         </div>
+
+        {userCode === "lhg" && (
+          <div className={`mt-8 bg-white rounded-xl shadow-lg border border-indigo-100 p-6 ${isMiniPlayer ? 'hidden' : ''} fade-in`}>
+            <div className="flex items-center gap-3 mb-4">
+              <BrainCircuit className="w-6 h-6 text-indigo-600" />
+              <h3 className="text-xl font-bold text-gray-800">Công cụ giải bài tập (Đặc quyền riêng)</h3>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">Nhập đề bài (có chỗ trống):</label>
+                <textarea 
+                  className="w-full h-64 p-4 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none resize-none transition-all custom-scrollbar"
+                  placeholder="Ví dụ: 1. ____12____ did you _____13______ ____14_____to the______15_______?&#10;(A) My car ______16____   on the ___17_____..."
+                  value={exerciseFormat}
+                  onChange={(e) => setExerciseFormat(e.target.value)}
+                />
+                <button
+                  onClick={handleSolveExercise}
+                  disabled={isSolving || !transcript}
+                  className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSolving ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Đang giải...</>
+                  ) : (
+                    "Tự động giải bài (Auto-fill)"
+                  )}
+                </button>
+                {!transcript && <p className="text-xs text-amber-600 text-center">Yêu cầu phải bóc băng Audio trước khi giải.</p>}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-gray-700">Kết quả từ AI:</label>
+                  {solvedExercise && (
+                    <button
+                      onClick={() => {
+                        const rawAnswerMap: Record<string, string> = {};
+                        const lines = solvedExercise.split('\n');
+                        for (const line of lines) {
+                          // Bắt định dạng nghiêm ngặt "BLANK_106: word" để tránh nhầm với câu hỏi "7. "
+                          const match = line.match(/^BLANK_(\d+)[\.\:]\s+(.+)$/i);
+                          if (match) {
+                            rawAnswerMap[match[1]] = match[2].replace(/\*\*/g, '').trim();
+                          }
+                        }
+
+                        // Trích xuất tất cả các ID ô trống từ đề bài (VD: ___106___, -----10-----, (11))
+                        const blankRegex = /([-_]{2,}|\(|\[)\s*(\d+)\s*([-_]{2,}|\)|\])/g;
+                        const blankIds: string[] = [];
+                        let m;
+                        while ((m = blankRegex.exec(exerciseFormat)) !== null) {
+                          blankIds.push(m[2]);
+                        }
+
+                        const answerMap: Record<string, string> = {};
+                        const rawKeys = Object.keys(rawAnswerMap).sort((a,b) => parseInt(a) - parseInt(b));
+                        
+                        if (rawKeys.length > 0) {
+                          // Nếu AI đánh số lại từ 1, 2, 3... nhưng đề bài không bắt đầu từ 1
+                          if (rawKeys[0] === "1" && blankIds.length > 0 && !blankIds.includes("1")) {
+                            for (let i = 0; i < rawKeys.length; i++) {
+                              if (blankIds[i]) {
+                                // Xóa các trường hợp AI sinh lặp số (vd: "1. 106. Have")
+                                let text = rawAnswerMap[rawKeys[i]];
+                                const doubleMatch = text.match(new RegExp('^' + blankIds[i] + '[\\.\\)\\-\\]\\:]\\s*(.+)'));
+                                if (doubleMatch) text = doubleMatch[1];
+                                
+                                answerMap[blankIds[i]] = text;
+                              }
+                            }
+                          } else {
+                            // AI đã đánh đúng số, hoặc không thể map tuần tự
+                            Object.assign(answerMap, rawAnswerMap);
+                          }
+                        }
+                        
+                        if (Object.keys(answerMap).length === 0) {
+                          toast.error("Không tìm thấy danh sách đáp án hợp lệ để tạo mã Auto-fill.");
+                          return;
+                        }
+
+                        const scriptCode = `(function() {
+  const answers = ${JSON.stringify(answerMap)};
+  
+  alert("🤖 Chế độ Auto-Bot đã kích hoạt! Hãy lướt / bấm chuyển câu trên trang web, bot sẽ liên tục tự động điền các ô xuất hiện trên màn hình.");
+
+  const filledNumbers = new Set();
+  
+  function triggerFill() {
+    const allInputs = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]')).filter(i => {
+      if (i.tagName.toLowerCase() === 'input') {
+        if (['hidden', 'radio', 'checkbox', 'submit', 'button', 'image', 'file'].includes(i.type.toLowerCase())) return false;
+      }
+      const style = window.getComputedStyle(i);
+      return style.display !== 'none' && style.visibility !== 'hidden' && i.offsetWidth > 0;
+    });
+
+    // 1. Cố gắng điền theo logic ánh xạ số
+    Object.entries(answers).forEach(([num, text]) => {
+      if (filledNumbers.has(num)) return; // Đã điền rồi thì bỏ qua
+      
+      let targetInput = allInputs.find(i => {
+        const id = (i.id || '').toLowerCase();
+        const name = (i.getAttribute('name') || '').toLowerCase();
+        return id.endsWith(num) || name.endsWith(num) || name.includes('['+num+']') || id.includes('_'+num);
+      });
+      
+      if (targetInput && (targetInput.isContentEditable ? targetInput.innerText.trim() === '' : targetInput.value.trim() === '')) {
+        fillInput(targetInput, text);
+        filledNumbers.add(num);
+      }
+    });
+
+    // 2. Chế độ cứu hộ (Viewport)
+    const unfilledEntries = Object.entries(answers).filter(([num]) => !filledNumbers.has(num));
+    if (unfilledEntries.length > 0) {
+      const visibleEmptyInputs = allInputs.filter(i => {
+        const rect = i.getBoundingClientRect();
+        // Kiểm tra xem nó có THỰC SỰ đang nằm trên màn hình không (xử lý cả vụ carousel cuộn ngang)
+        const isVisibleVertically = rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+        const isVisibleHorizontally = rect.left >= 0 && rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+        
+        if (!(isVisibleVertically && isVisibleHorizontally)) return false;
+        
+        if (i.isContentEditable) return !i.innerText.trim();
+        return !i.value.trim();
+      });
+
+      visibleEmptyInputs.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+      for (let i = 0; i < Math.min(unfilledEntries.length, visibleEmptyInputs.length); i++) {
+        const [num, text] = unfilledEntries[i];
+        const input = visibleEmptyInputs[i];
+        fillInput(input, text);
+        filledNumbers.add(num);
+        input.style.backgroundColor = '#fef08a'; // Màu vàng
+        input.style.border = '2px solid #eab308';
+      }
+    }
+  }
+
+  function fillInput(targetInput, text) {
+    if (targetInput.isContentEditable) {
+      targetInput.innerText = text;
+    } else {
+      let nativeSetter = targetInput.tagName.toLowerCase() === 'textarea' 
+        ? Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set 
+        : Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+      
+      if (nativeSetter) {
+        nativeSetter.call(targetInput, text);
+      } else {
+        targetInput.value = text;
+      }
+    }
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    targetInput.dispatchEvent(new Event('blur', { bubbles: true }));
+    targetInput.style.backgroundColor = '#dcfce7'; 
+    targetInput.style.border = '2px solid #22c55e';
+  }
+
+  // Chạy lặp mỗi 1 giây để bắt mọi ô input mới hiện ra
+  setInterval(triggerFill, 1000);
+  triggerFill();
+})();`;
+
+                        navigator.clipboard.writeText(scriptCode);
+                        toast.success("Đã copy mã Auto-fill! Sang tab bài thi, bấm F12 -> Console -> Dán mã -> Enter.");
+                      }}
+                      className="px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      Copy Script (F12)
+                    </button>
+                  )}
+                </div>
+                <div className="w-full h-[calc(16rem+3rem)] p-4 rounded-xl border border-gray-200 bg-gray-50 overflow-y-auto custom-scrollbar whitespace-pre-wrap text-gray-700 leading-relaxed">
+                  {solvedExercise ? (
+                    <div dangerouslySetInnerHTML={{ __html: solvedExercise.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-indigo-700 bg-indigo-100 px-1 rounded">$1</span>').replace(/\n/g, '<br />') }} />
+                  ) : (
+                    <span className="text-gray-400 italic flex items-center justify-center h-full text-center">Kết quả giải bài sẽ hiển thị ở đây...<br />(Các từ điền vào chỗ trống sẽ được tô đậm)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
