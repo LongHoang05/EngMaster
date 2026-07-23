@@ -73,6 +73,7 @@ export default function QuizContainer({
     options: string[];
     type: string;
     fails: number;
+    direction?: "en_to_vi" | "vi_to_en";
   }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -222,7 +223,8 @@ export default function QuizContainer({
       const currentQ = questions[currentIndex];
       if (
         quizType === "typing_en_to_vi" || 
-        quizType.startsWith("listening")
+        quizType.startsWith("listening") ||
+        (quizType === "multiple_choice" && currentQ.direction === "en_to_vi")
       ) {
         const textToPlay = quizType.startsWith("listening") ? currentQ.wordObject.word : currentQ.promptText;
         playAudio(textToPlay, "en-US");
@@ -384,39 +386,76 @@ export default function QuizContainer({
       let correctAnswerText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
       let options: string[] = [];
 
+      let direction: "en_to_vi" | "vi_to_en" | undefined;
+
       if (quizType === "typing_vi_to_en") {
         promptText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
         promptSub = "";
         correctAnswerText = wordObj.word;
       } else if (quizType === "multiple_choice") {
-        // Câu hỏi tiếng Việt, đáp án tiếng Anh
-        promptText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
-        promptSub = "";
-        correctAnswerText = wordObj.word;
+        const isEnToVi = Math.random() > 0.5;
+        direction = isEnToVi ? "en_to_vi" : "vi_to_en";
         
-        const wrongAnswers: string[] = [];
-        if (words.length <= 4) {
-          wrongAnswers.push(...words.filter((w) => w.id !== wordObj.id).map((w) => w.word));
-        } else {
-          const pickedIndices = new Set<number>();
-          while (pickedIndices.size < 3) {
-            const rIdx = Math.floor(Math.random() * words.length);
-            if (words[rIdx].id !== wordObj.id) {
-              pickedIndices.add(rIdx);
-            }
-          }
-          pickedIndices.forEach((idx) => wrongAnswers.push(words[idx].word));
-        }
+        if (isEnToVi) {
+          // Câu hỏi tiếng Anh, đáp án tiếng Việt
+          promptText = wordObj.word;
+          promptSub = wordObj.ipa;
+          correctAnswerText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
           
-        // Thêm đáp án giả nếu không đủ từ vựng
-        while (wrongAnswers.length < 3) {
-          wrongAnswers.push(`Option ${wrongAnswers.length + 1}`);
+          const wrongAnswers: string[] = [];
+          if (words.length <= 4) {
+            wrongAnswers.push(...words.filter((w) => w.id !== wordObj.id).map((w) => Array.isArray(w.meanings) ? w.meanings[0] : w.meanings));
+          } else {
+            const pickedIndices = new Set<number>();
+            while (pickedIndices.size < 3) {
+              const rIdx = Math.floor(Math.random() * words.length);
+              if (words[rIdx].id !== wordObj.id) {
+                pickedIndices.add(rIdx);
+              }
+            }
+            pickedIndices.forEach((idx) => {
+              const w = words[idx];
+              wrongAnswers.push(Array.isArray(w.meanings) ? w.meanings[0] : w.meanings);
+            });
+          }
+            
+          while (wrongAnswers.length < 3) {
+            wrongAnswers.push(`Option ${wrongAnswers.length + 1}`);
+          }
+          
+          options = shuffleArray([
+            ...wrongAnswers,
+            correctAnswerText,
+          ]);
+        } else {
+          // Câu hỏi tiếng Việt, đáp án tiếng Anh
+          promptText = Array.isArray(wordObj.meanings) ? wordObj.meanings[0] : wordObj.meanings;
+          promptSub = "";
+          correctAnswerText = wordObj.word;
+          
+          const wrongAnswers: string[] = [];
+          if (words.length <= 4) {
+            wrongAnswers.push(...words.filter((w) => w.id !== wordObj.id).map((w) => w.word));
+          } else {
+            const pickedIndices = new Set<number>();
+            while (pickedIndices.size < 3) {
+              const rIdx = Math.floor(Math.random() * words.length);
+              if (words[rIdx].id !== wordObj.id) {
+                pickedIndices.add(rIdx);
+              }
+            }
+            pickedIndices.forEach((idx) => wrongAnswers.push(words[idx].word));
+          }
+            
+          while (wrongAnswers.length < 3) {
+            wrongAnswers.push(`Option ${wrongAnswers.length + 1}`);
+          }
+          
+          options = shuffleArray([
+            ...wrongAnswers,
+            wordObj.word,
+          ]);
         }
-        
-        options = shuffleArray([
-          ...wrongAnswers,
-          wordObj.word,
-        ]);
       } else if (quizType === "listening_en_to_vi") {
         promptSub = "";
       } else if (quizType === "listening_en_to_en") {
@@ -432,6 +471,7 @@ export default function QuizContainer({
         options,
         type: quizType,
         fails: 0,
+        direction,
       };
     });
 
@@ -955,7 +995,7 @@ export default function QuizContainer({
               <h3 className="text-4xl md:text-5xl font-black text-slate-800 mb-4 tracking-tight">
                 {currentQ.promptText}
               </h3>
-              {quizType !== "typing_vi_to_en" && quizType !== "multiple_choice" && (
+              {quizType !== "typing_vi_to_en" && !(quizType === "multiple_choice" && currentQ.direction === "vi_to_en") && (
                 <button
                   onClick={() => playAudio(currentQ.wordObject.word)}
                   className="p-3 text-indigo-500 hover:bg-indigo-50 rounded-full transition-all mb-4"
