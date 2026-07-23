@@ -125,27 +125,7 @@ export default function EngMaster() {
     setIsLogoutModalOpen(false);
   };
 
-  // --- AI BACKGROUND PRE-LOADING ---
-  // Tải ngầm mô hình AI vào cache trình duyệt ngay khi người dùng đăng nhập
-  // Nhờ vậy khi họ chuyển sang tab "Luyện Nghe", AI sẽ sẵn sàng ngay lập tức.
-  useEffect(() => {
-    if (userCode) {
-      const preloadWorker = new Worker(window.location.origin + '/worker.js', { type: 'module' });
-      preloadWorker.postMessage({ type: 'load' });
 
-      preloadWorker.onmessage = (e) => {
-        if (e.data.status === 'ready') {
-          console.log("Preload Worker: AI Model (Base) cached successfully in background. Terminating preload worker to free RAM.");
-          preloadWorker.terminate();
-        } else if (e.data.status === 'error') {
-          console.error("Preload Worker error:", e.data.error);
-          preloadWorker.terminate();
-        }
-      };
-
-      return () => preloadWorker.terminate();
-    }
-  }, [userCode]);
 
   // RENDERING
   if (isAuthLoading) return null;
